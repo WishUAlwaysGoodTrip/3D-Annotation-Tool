@@ -3,10 +3,18 @@ import {Center, Select} from "@react-three/drei";
 import {useLoader, useThree, useFrame, ThreeEvent} from "@react-three/fiber";
 import {STLLoader} from "three/examples/jsm/loaders/STLLoader";
 import Loader from "./Loader";
-import { Raycaster, Vector2, Vector3, Mesh } from 'three';
-import { acceleratedRaycast} from 'three-mesh-bvh';
+import {Raycaster, Vector2, Vector3, Mesh, BufferGeometry, BatchedMesh} from 'three';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
+BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 Mesh.prototype.raycast = acceleratedRaycast;
+
+// @ts-ignore
+BatchedMesh.prototype.computeBoundsTree = computeBoundsTree;
+// @ts-ignore
+BatchedMesh.prototype.disposeBoundsTree = disposeBoundsTree;
+BatchedMesh.prototype.raycast = acceleratedRaycast;
 
 const files = ['teeth-new-top.stl']
 const color = ['#9c9ea1']
@@ -25,7 +33,7 @@ const Editor: FC<Props> = ({ /*setSelected,*/ setSelectedVertices }) => {
     const { scene, camera, gl } = useThree();
     const raycaster = useRef(new Raycaster());
 
-    const [stl, setStl] = useState<THREE.BufferGeometry | null>(null);
+    const [stl, setStl] = useState<BufferGeometry | null>(null);
     const [error, setError] = useState<string | null>(null);
     useEffect(() => {
         const loader = new STLLoader();
