@@ -7,7 +7,6 @@ import { GUI } from 'lil-gui';
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-
 let targetMesh;
 let scene, camera, renderer, controls;
 let cursorCircle, cursorCircleMaterial;
@@ -39,20 +38,46 @@ function init() {
     light.position.set(1, 1, 1);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-
-    loadModel();
+    setupFileUpload();
     createCursorCircle();
     animate();
 
     // Call addGUI to initialize the GUI
     addGUI();
-    
+
+   
 }
 
 
-function loadModel() {
+function setupFileUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadButton = document.getElementById('uploadButton');
+
+    // Trigger the file input click when the upload button is clicked
+    uploadButton.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Listen for file selection
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file && file.name.endsWith('.stl')) {
+            const fileURL = URL.createObjectURL(file);
+            loadModel(fileURL); // Pass the selected file to the loadModel function
+        } else {
+            console.error('Please upload a valid STL file.');
+        }
+    });
+}
+function loadModel(stlPath) {
     const loader = new STLLoader();
-    loader.load('/upper.stl', function (geometry) {
+    if (targetMesh) {
+        scene.remove(targetMesh);
+        targetMesh.geometry.dispose();
+        targetMesh.material.dispose(); 
+        targetMesh = null; 
+    }
+    loader.load(stlPath, function (geometry) {
         geometry.computeBoundsTree();
 
         const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
