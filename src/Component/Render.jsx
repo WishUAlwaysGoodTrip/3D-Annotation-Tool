@@ -108,8 +108,6 @@ function init() {
   updateEventListeners();
 }
 
-
-
 // 加载 STL 模型
 function loadModel() {
   const loader = new STLLoader();
@@ -134,28 +132,25 @@ function loadModel() {
     // 创建网格对象
     targetMesh = new THREE.Mesh(geometry, material);
 
-    // 计算模型的边界盒中心
+    // 计算模型的边界盒并将其居中
     const boundingBox = new THREE.Box3().setFromObject(targetMesh);
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
+    targetMesh.position.sub(center);
+        // 旋转模型
+    targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
 
-    // 将模型的几何体移到中心
-    geometry.translate(-center.x, -center.y, -center.z);
+    // 再次调整位置以确保模型仍然在中心
+    boundingBox.setFromObject(targetMesh);
+    boundingBox.getCenter(center);
+    targetMesh.position.sub(center);
 
-    // 创建一个组（Group），用于围绕中心旋转
-    const pivot = new THREE.Group();
-    pivot.add(targetMesh); // 将模型添加到组中
+    scene.add(targetMesh);
 
-    // 设置初始旋转角度（例如沿x轴旋转90度）
-    pivot.rotation.x = (3*Math.PI) / 2; // x轴旋转90度
-
-    // 将组添加到场景中
-    scene.add(pivot);
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
-
 
 // 创建指示器圆形
 function createCursorCircle() {
@@ -189,12 +184,15 @@ function onPointerMove(e) {
     if (intersects.length > 0) {
       const intersect = intersects[0];
       cursorCircle.position.copy(intersect.point);
+          // 隐藏光标
+      document.body.style.cursor = 'none'; 
 
       if (isPainting) {
         paintIntersectedArea(intersect);
       }
     } else {
       cursorCircle.position.set(10000, 10000, 10000); // 将指示器移动到视野外
+      document.body.style.cursor = 'default'; 
     }
 
     updateCursorCircleOrientation();
@@ -337,15 +335,14 @@ function updateEventListeners() {
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
 
-    // 隐藏光标
-    // document.body.style.cursor = 'none'; 
+
   } else {
     window.removeEventListener('pointermove', onPointerMove, false);
     window.removeEventListener('pointerdown', onPointerDown, false);
     window.removeEventListener('pointerup', onPointerUp, false);
 
     // 恢复默认光标
-    // document.body.style.cursor = 'default';
+    document.body.style.cursor = 'default';
   }
 }
 
