@@ -12,8 +12,7 @@ import {
 } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
-
-const Render = () => {
+const Render = ({ mode: incomingMode }) => {
   useEffect(() => {
     init(); // 初始化 Three.js 场景
 
@@ -25,6 +24,12 @@ const Render = () => {
       if (renderer) document.body.removeChild(renderer.domElement);
     };
   }, []);
+
+  useEffect(() => {
+    mode = incomingMode; // 使用传入的 mode 更新全局 mode 变量
+    updateControls(); // 根据新的 mode 更新控制
+    updateEventListeners(); // 更新事件监听器
+  }, [incomingMode]); // 仅在 incomingMode 变化时运行
 
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
@@ -67,13 +72,15 @@ function init() {
   controls.screenSpacePanning = false; // 确保拖拽方向正确
   controls.rotateSpeed = 1.0; // 设置旋转速度
 
-  // 更新控制器
-  controls.update();
+  controls.update(); // 更新控制器
 
   // 添加光源
-  const light = new THREE.DirectionalLight(0xffffff, 0.5);
-  light.position.set(1, 1, 1);
-  scene.add(light);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  mainLight.position.set(1, 1, 1);
+  scene.add(mainLight);
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  fillLight.position.set(-5, -5, -5);
+  scene.add(fillLight);
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
   loadModel(); // 加载 STL 模型
@@ -126,8 +133,17 @@ function createCursorCircle() {
   const geometry = new THREE.CircleGeometry(5, 32);
   cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
   cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
-  cursorCircle.position.z = 1;
+
+  cursorCircle.position.z = 1; // 初始位置
   scene.add(cursorCircle);
+}
+
+// 更新指示器圆形的朝向
+function updateCursorCircleOrientation() {
+  const cameraDirection = new THREE.Vector3();
+  camera.getWorldDirection(cameraDirection);
+
+  cursorCircle.lookAt(camera.position.clone().add(cameraDirection));
 }
 
 // 鼠标移动事件处理
@@ -151,6 +167,8 @@ function onPointerMove(e) {
     } else {
       cursorCircle.position.set(10000, 10000, 10000); // 将指示器移动到视野外
     }
+
+    updateCursorCircleOrientation();
   }
 }
 
@@ -221,65 +239,54 @@ function paintIntersectedArea(intersect) {
   }
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
+
 function addGUI() {
-    if (gui) {
-      gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
-    }
-  
-    gui = new GUI(); // 创建新的 GUI 实例
-    const params = {
-      mode: 'dragging',
-      cursorOpacity: cursorCircleMaterial.opacity,
-      cursorColor: cursorCircleMaterial.color.getHex(),
-      cursorSize: 2,
-      renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
-    };
-  
-    // 模式控制
-    gui.add(params, 'mode', ['painting', 'dragging'])
-      .name('Mode')
-      .onChange((value) => {
-        mode = value;
-        updateControls();
-        updateEventListeners();
-      });
-  
-    // 创建 "Cursor Circle" 文件夹并添加控件
-    const cursorFolder = gui.addFolder('Cursor Circle');
-    cursorFolder
-      .add(params, 'cursorOpacity', 0, 1)
-      .name('Opacity')
-      .onChange((value) => (cursorCircleMaterial.opacity = value));
-    cursorFolder
-      .addColor(params, 'cursorColor')
-      .name('Color')
-      .onChange((value) => cursorCircleMaterial.color.setHex(value));
-    cursorFolder
-      .add(params, 'cursorSize', 1, 20)
-      .name('Size')
-      .onChange((value) => {
-        cursorCircle.scale.set(value / 5, value / 5, value / 5);
-      });
-    cursorFolder.open(); // 确保 "Cursor Circle" 文件夹默认展开
-  
-    const renderFolder = gui.addFolder('Render Color');
-    renderFolder
-      .addColor(params, 'renderColor')
-      .name('Render Color')
-      .onChange((value) => {
-        paintColor.set(value);
-
-        const r = Math.round(paintColor.r * 255);
-        const g = Math.round(paintColor.g * 255);
-        const b = Math.round(paintColor.b * 255);
-    
-        paintColor.setRGB(r, g, b);
-      });
-    renderFolder.open(); 
+  if (gui) {
+    gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
   }
-  
 
+  gui = new GUI(); // 创建新的 GUI 实例
+  const params = {
+    mode: 'dragging',
+    cursorOpacity: cursorCircleMaterial.opacity,
+    cursorColor: cursorCircleMaterial.color.getHex(),
+    cursorSize: 2,
+    renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
+  };
 
+  // 只创建 "Cursor Circle" 和 "Render Color" 控件，而不包括模式切换控件
+  const cursorFolder = gui.addFolder('Cursor Circle');
+  cursorFolder
+    .add(params, 'cursorOpacity', 0, 1)
+    .name('Opacity')
+    .onChange((value) => (cursorCircleMaterial.opacity = value));
+  cursorFolder
+    .addColor(params, 'cursorColor')
+    .name('Color')
+    .onChange((value) => cursorCircleMaterial.color.setHex(value));
+  cursorFolder
+    .add(params, 'cursorSize', 1, 20)
+    .name('Size')
+    .onChange((value) => {
+      cursorCircle.scale.set(value / 5, value / 5, value / 5);
+    });
+  cursorFolder.open(); // 确保 "Cursor Circle" 文件夹默认展开
+
+  const renderFolder = gui.addFolder('Render Color');
+  renderFolder
+    .addColor(params, 'renderColor')
+    .name('Render Color')
+    .onChange((value) => {
+      paintColor.set(value);
+
+      const r = Math.round(paintColor.r * 255);
+      const g = Math.round(paintColor.g * 255);
+      const b = Math.round(paintColor.b * 255);
+
+      paintColor.setRGB(r, g, b);
+    });
+  renderFolder.open();
+}
 
 // 更新控制
 function updateControls() {
@@ -300,10 +307,16 @@ function updateEventListeners() {
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
+
+    // 隐藏光标
+    // document.body.style.cursor = 'none'; 
   } else {
     window.removeEventListener('pointermove', onPointerMove, false);
     window.removeEventListener('pointerdown', onPointerDown, false);
     window.removeEventListener('pointerup', onPointerUp, false);
+
+    // 恢复默认光标
+    // document.body.style.cursor = 'default';
   }
 }
 
@@ -311,6 +324,7 @@ function updateEventListeners() {
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
+  updateCursorCircleOrientation();
 }
 
 export default Render;
