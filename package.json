@@ -9,7 +9,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite build && electron ."
+    "start": "NODE_ENV=development concurrently \"vite\" \"electron .\"",
+    "electron-build": "NODE_ENV=production electron ."
   },
   "dependencies": {
     "lil-gui": "^0.19.2",
