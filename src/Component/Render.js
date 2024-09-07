@@ -45,7 +45,6 @@ function init() {
     // Call addGUI to initialize the GUI
     addGUI();
 
-   
 }
 
 
@@ -258,4 +257,12 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-init();
+const Render = () => {
+    // 调用初始化函数
+    init();
+    // 返回一个空的 React 元素，因为渲染完全由 Three.js 控制
+    return null;
+};
+
+// 确保正确导出 Render 组件
+export default Render;

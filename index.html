@@ -8,6 +8,7 @@
 <body>
     <button id="uploadButton">Upload STL File</button>
     <input type="file" id="fileInput" style="display: none;" accept=".stl">
-    <script type="module" src="./src/main.js"></script>  <!-- Ensure correct path -->
+    <div id="root"></div> <!-- React 会在这里挂载 -->
+    <script type="module" src="./src/main.jsx"></script>  <!-- Ensure correct path -->
 </body>
 </html>
