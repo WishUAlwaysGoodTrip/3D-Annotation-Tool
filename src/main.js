@@ -46,9 +46,7 @@ function init() {
 
     // Call addGUI to initialize the GUI
     addGUI();
-    
 }
-
 
 function loadModel() {
     const loader = new STLLoader();
@@ -112,6 +110,8 @@ function onPointerUp(e) {
     }
 }
 
+let paintColor = new THREE.Color(1, 0, 0); // 默认颜色为红色
+
 function paintIntersectedArea(intersect) {
     const indices = [];
     const tempVec = new THREE.Vector3();
@@ -119,7 +119,7 @@ function paintIntersectedArea(intersect) {
     const inverseMatrix = new THREE.Matrix4();
     inverseMatrix.copy(targetMesh.matrixWorld).invert();
 
-    const circleRadius = 5;
+    const circleRadius = cursorCircle.scale.x * 5; // 使用cursorCircle的缩放比例来调整绘制半径
     const sphere = new THREE.Sphere();
     sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
     sphere.radius = circleRadius;
@@ -142,8 +142,8 @@ function paintIntersectedArea(intersect) {
                             }
                         }
                     }
+                    return CONTAINED;
                 }
-                return CONTAINED;
             }
             return intersects ? INTERSECTED : NOT_INTERSECTED;
         },
@@ -159,17 +159,20 @@ function paintIntersectedArea(intersect) {
     const colorAttr = targetMesh.geometry.getAttribute('color');
     for (let i = 0, l = indices.length; i < l; i++) {
         const index = targetMesh.geometry.index.getX(indices[i]);
-        colorAttr.setXYZ(index, 1, 0, 0);
+        colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
     }
     colorAttr.needsUpdate = true;
 }
 
+
 function addGUI() {
     const gui = new GUI();
     const params = {
-        mode: 'dragging', // Default mode
+        mode: 'dragging',
         cursorOpacity: cursorCircleMaterial.opacity,
-        cursorColor: cursorCircleMaterial.color.getHex()
+        cursorColor: cursorCircleMaterial.color.getHex(),
+        cursorSize: 5,
+        renderColor: paintColor.getHex() // 这是用于设置绘制颜色的参数
     };
 
     gui.add(params, 'mode', ['painting', 'dragging']).name('Mode').onChange(value => {
@@ -178,34 +181,26 @@ function addGUI() {
         updateEventListeners();
     });
 
-    // Step 1: Create an object to store the camera position
-    const cameraPosition = {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z
-    };
-
-    // Step 2: Create a function to update the camera position
-    function updateCameraPosition() {
-        cameraPosition.x = camera.position.x;
-        cameraPosition.y = camera.position.y;
-        cameraPosition.z = camera.position.z;
-    }
-
-    // Add camera position display
-    const cameraFolder = gui.addFolder('Camera Position');
-    cameraFolder.add(cameraPosition, 'x').listen();
-    cameraFolder.add(cameraPosition, 'y').listen();
-    cameraFolder.add(cameraPosition, 'z').listen();
-    cameraFolder.open();
-
     const cursorFolder = gui.addFolder('Cursor Circle');
     cursorFolder.add(params, 'cursorOpacity', 0, 1).name('Opacity').onChange(value => cursorCircleMaterial.opacity = value);
     cursorFolder.addColor(params, 'cursorColor').name('Color').onChange(value => cursorCircleMaterial.color.setHex(value));
+    cursorFolder.add(params, 'cursorSize', 1, 20).name('Size').onChange(value => {
+        cursorCircle.scale.set(value / 5, value / 5, value / 5);
+    });
     cursorFolder.open();
-    // Update the camera position at regular intervals
-    setInterval(updateCameraPosition, 100);
+
+    const renderFolder = gui.addFolder('Render Color');
+    renderFolder.addColor(params, 'renderColor').name('Render Color').onChange(value => {
+        if (typeof value === 'string') {
+            paintColor.set(value); // Handle string color values
+        } else {
+            paintColor.setHex(value); // Handle hex color values
+        }
+    });
+    renderFolder.open();
 }
+
+
 
 function updateControls() {
     if (mode === 'dragging') {
