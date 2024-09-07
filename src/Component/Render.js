@@ -63,9 +63,25 @@ function init() {
   controls.enableZoom = true;
   controls.zoomSpeed = 1.0;
   controls.enableRotate = true;
+  controls.rotateSpeed = 2.0; // 提高旋转速度
   controls.enablePan = true;
   controls.screenSpacePanning = false; // 确保拖拽方向正确
-  controls.rotateSpeed = 1.0; // 设置旋转速度
+
+  // 解除极限角度限制
+  controls.minPolarAngle = 0; // 最小极限角度
+  controls.maxPolarAngle = Math.PI; // 最大极限角度
+
+  // 允许水平旋转无限制
+  controls.minAzimuthAngle = -Infinity; 
+  controls.maxAzimuthAngle = Infinity;
+
+  // 设置惯性阻尼
+  controls.enableDamping = true; // 启用惯性阻尼
+  controls.dampingFactor = 0.1; // 阻尼系数
+
+  // 禁用默认的旋转目标限制
+  controls.target.set(0, 0, 0); // 将目标点设置为模型的中心
+  controls.enableRotate = true;
 
   // 更新控制器
   controls.update();
@@ -84,6 +100,8 @@ function init() {
   // 添加事件监听器
   updateEventListeners();
 }
+
+
 
 // 加载 STL 模型
 function loadModel() {
@@ -109,17 +127,28 @@ function loadModel() {
     // 创建网格对象
     targetMesh = new THREE.Mesh(geometry, material);
 
-    // 计算模型的边界盒并将其居中
+    // 计算模型的边界盒中心
     const boundingBox = new THREE.Box3().setFromObject(targetMesh);
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
-    targetMesh.position.sub(center); // 将模型移动到场景中心
 
-    scene.add(targetMesh);
+    // 将模型的几何体移到中心
+    geometry.translate(-center.x, -center.y, -center.z);
+
+    // 创建一个组（Group），用于围绕中心旋转
+    const pivot = new THREE.Group();
+    pivot.add(targetMesh); // 将模型添加到组中
+
+    // 设置初始旋转角度（例如沿x轴旋转90度）
+    pivot.rotation.x = (3*Math.PI) / 2; // x轴旋转90度
+
+    // 将组添加到场景中
+    scene.add(pivot);
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
+
 
 // 创建指示器圆形
 function createCursorCircle() {
