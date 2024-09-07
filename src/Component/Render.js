@@ -2,13 +2,20 @@ import React, { useEffect } from 'react';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
+import { 
+  acceleratedRaycast, 
+  computeBoundsTree, 
+  disposeBoundsTree, 
+  CONTAINED, 
+  INTERSECTED, 
+  NOT_INTERSECTED 
+} from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
+
 
 const Render = () => {
   useEffect(() => {
-    // 初始化 Three.js 场景
-    init();
+    init(); // 初始化 Three.js 场景
 
     // 清除事件监听器和 Three.js 渲染器
     return () => {
@@ -33,35 +40,41 @@ let scene, camera, renderer, controls;
 let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
 let mode = 'dragging'; // 默认模式为拖拽
+let gui; // 全局 GUI 变量
 
 // 初始化场景和 Three.js 渲染器
 function init() {
   scene = new THREE.Scene();
 
+  // 设置相机
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 50, 100);
-  camera.rotation.set(Math.PI / 2, 0, 0); // 设置初始相机角度
 
+  // 设置渲染器
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x263238, 1);
   renderer.outputEncoding = THREE.sRGBEncoding;
-  document.body.appendChild(renderer.domElement); // 将渲染器的 DOM 元素添加到 body
+  document.body.appendChild(renderer.domElement);
 
+  // 设置相机控制器
   controls = new OrbitControls(camera, renderer.domElement);
   controls.update();
 
+  // 添加光源
   const light = new THREE.DirectionalLight(0xffffff, 0.5);
   light.position.set(1, 1, 1);
   scene.add(light);
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-  // 加载模型并创建其他元素
-  loadModel();
-  createCursorCircle();
-  animate();
-  addGUI();
+  loadModel();  // 加载 STL 模型
+  createCursorCircle();  // 创建指示器
+  animate();  // 启动动画循环
+  addGUI();  // 添加 GUI 控制
+
+  // 添加事件监听器
+  updateEventListeners();
 }
 
 // 加载 STL 模型
@@ -70,13 +83,22 @@ function loadModel() {
   loader.load('/upper.stl', function (geometry) {
     geometry.computeBoundsTree();
 
+    // 初始化颜色属性
     const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
-    colorArray.fill(255);
+    colorArray.fill(255); // 使用白色作为初始颜色
     const colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
     colorAttr.setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute('color', colorAttr);
 
-    const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0, vertexColors: true });
+    // 创建材质并启用顶点颜色
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.3,
+      metalness: 0,
+      vertexColors: true, // 使用顶点颜色
+    });
+
+    // 创建网格对象
     targetMesh = new THREE.Mesh(geometry, material);
     scene.add(targetMesh);
   }, undefined, function (error) {
@@ -132,7 +154,7 @@ function onPointerUp(e) {
 }
 
 // 绘制选定区域
-let paintColor = new THREE.Color(1, 0, 0); // 默认绘制颜色为红色
+let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
 function paintIntersectedArea(intersect) {
   const indices = [];
@@ -147,7 +169,7 @@ function paintIntersectedArea(intersect) {
   sphere.radius = circleRadius;
 
   targetMesh.geometry.boundsTree.shapecast({
-    intersectsBounds: box => {
+    intersectsBounds: (box) => {
       const intersects = sphere.intersectsBox(box);
       if (intersects) {
         const { min, max } = box;
@@ -177,50 +199,72 @@ function paintIntersectedArea(intersect) {
       return false;
     }
   });
-
   const colorAttr = targetMesh.geometry.getAttribute('color');
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
   }
-  colorAttr.needsUpdate = true;
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
-
-// GUI 控制
 function addGUI() {
-  const gui = new GUI();
-  const params = {
-    mode: 'dragging',
-    cursorOpacity: cursorCircleMaterial.opacity,
-    cursorColor: cursorCircleMaterial.color.getHex(),
-    cursorSize: 5,
-    renderColor: paintColor.getHex() // 设置绘制颜色
-  };
-
-  gui.add(params, 'mode', ['painting', 'dragging']).name('Mode').onChange(value => {
-    mode = value;
-    updateControls();
-    updateEventListeners();
-  });
-
-  const cursorFolder = gui.addFolder('Cursor Circle');
-  cursorFolder.add(params, 'cursorOpacity', 0, 1).name('Opacity').onChange(value => cursorCircleMaterial.opacity = value);
-  cursorFolder.addColor(params, 'cursorColor').name('Color').onChange(value => cursorCircleMaterial.color.setHex(value));
-  cursorFolder.add(params, 'cursorSize', 1, 20).name('Size').onChange(value => {
-    cursorCircle.scale.set(value / 5, value / 5, value / 5);
-  });
-  cursorFolder.open();
-
-  const renderFolder = gui.addFolder('Render Color');
-  renderFolder.addColor(params, 'renderColor').name('Render Color').onChange(value => {
-    if (typeof value === 'string') {
-      paintColor.set(value); // 处理字符串颜色值
-    } else {
-      paintColor.setHex(value); // 处理十六进制颜色值
+    if (gui) {
+      gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
     }
-  });
-  renderFolder.open();
-}
+  
+    gui = new GUI(); // 创建新的 GUI 实例
+    const params = {
+      mode: 'dragging',
+      cursorOpacity: cursorCircleMaterial.opacity,
+      cursorColor: cursorCircleMaterial.color.getHex(),
+      cursorSize: 5,
+      renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
+    };
+  
+    // 模式控制
+    gui.add(params, 'mode', ['painting', 'dragging'])
+      .name('Mode')
+      .onChange((value) => {
+        mode = value;
+        updateControls();
+        updateEventListeners();
+      });
+  
+    // 创建 "Cursor Circle" 文件夹并添加控件
+    const cursorFolder = gui.addFolder('Cursor Circle');
+    cursorFolder
+      .add(params, 'cursorOpacity', 0, 1)
+      .name('Opacity')
+      .onChange((value) => (cursorCircleMaterial.opacity = value));
+    cursorFolder
+      .addColor(params, 'cursorColor')
+      .name('Color')
+      .onChange((value) => cursorCircleMaterial.color.setHex(value));
+    cursorFolder
+      .add(params, 'cursorSize', 1, 20)
+      .name('Size')
+      .onChange((value) => {
+        cursorCircle.scale.set(value / 5, value / 5, value / 5);
+      });
+    cursorFolder.open(); // 确保 "Cursor Circle" 文件夹默认展开
+  
+    const renderFolder = gui.addFolder('Render Color');
+    renderFolder
+      .addColor(params, 'renderColor')
+      .name('Render Color')
+      .onChange((value) => {
+        paintColor.set(value);
+
+        const r = Math.round(paintColor.r * 255);
+        const g = Math.round(paintColor.g * 255);
+        const b = Math.round(paintColor.b * 255);
+    
+        paintColor.setRGB(r, g, b);
+      });
+    renderFolder.open(); 
+  }
+  
+
+
 
 // 更新控制
 function updateControls() {
