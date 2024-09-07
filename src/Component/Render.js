@@ -60,6 +60,14 @@ function init() {
 
   // 设置相机控制器
   controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableZoom = true;
+  controls.zoomSpeed = 1.0;
+  controls.enableRotate = true;
+  controls.enablePan = true;
+  controls.screenSpacePanning = false; // 确保拖拽方向正确
+  controls.rotateSpeed = 1.0; // 设置旋转速度
+
+  // 更新控制器
   controls.update();
 
   // 添加光源
@@ -68,10 +76,10 @@ function init() {
   scene.add(light);
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-  loadModel();  // 加载 STL 模型
-  createCursorCircle();  // 创建指示器
-  animate();  // 启动动画循环
-  addGUI();  // 添加 GUI 控制
+  loadModel(); // 加载 STL 模型
+  createCursorCircle(); // 创建指示器
+  animate(); // 启动动画循环
+  addGUI(); // 添加 GUI 控制
 
   // 添加事件监听器
   updateEventListeners();
@@ -100,6 +108,13 @@ function loadModel() {
 
     // 创建网格对象
     targetMesh = new THREE.Mesh(geometry, material);
+
+    // 计算模型的边界盒并将其居中
+    const boundingBox = new THREE.Box3().setFromObject(targetMesh);
+    const center = new THREE.Vector3();
+    boundingBox.getCenter(center);
+    targetMesh.position.sub(center); // 将模型移动到场景中心
+
     scene.add(targetMesh);
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
@@ -216,7 +231,7 @@ function addGUI() {
       mode: 'dragging',
       cursorOpacity: cursorCircleMaterial.opacity,
       cursorColor: cursorCircleMaterial.color.getHex(),
-      cursorSize: 5,
+      cursorSize: 2,
       renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
     };
   
