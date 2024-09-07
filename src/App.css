@@ -73,3 +73,17 @@
   width: 80%;
   height: 80%;
 }
+
+.toolbar-button.active {
+  background-color: rgba(215, 215, 215, 0.3);
+}
+
+.toolbar-button.active .toolbar-icon {
+  filter: brightness(1.2);
+}
+
+#toolbar #line .toolbar-icon {
+  rotate: 45deg;
+  padding: 25% 0;
+
+}
