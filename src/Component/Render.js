@@ -1,268 +1,257 @@
+import React, { useEffect } from 'react';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
+const Render = () => {
+  useEffect(() => {
+    // 初始化 Three.js 场景
+    init();
+
+    // 清除事件监听器和 Three.js 渲染器
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      if (renderer) document.body.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
+};
+
+// 将 BVH 加速结构的算法方法绑定到 Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+
+// 全局变量声明
 let targetMesh;
 let scene, camera, renderer, controls;
 let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
-let mode = 'dragging'; // Default mode
+let mode = 'dragging'; // 默认模式为拖拽
 
+// 初始化场景和 Three.js 渲染器
 function init() {
-    scene = new THREE.Scene();
+  scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 50, 100);
+  camera.rotation.set(Math.PI / 2, 0, 0); // 设置初始相机角度
 
-    // Set camera position
-    camera.position.set(0, 50, 100);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x263238, 1);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  document.body.appendChild(renderer.domElement); // 将渲染器的 DOM 元素添加到 body
 
-    // Set camera rotation
-    camera.rotation.set(Math.PI / 2, 0, 0); // Example: look down slightly
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.update();
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x263238, 1);
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    document.body.appendChild(renderer.domElement);
+  const light = new THREE.DirectionalLight(0xffffff, 0.5);
+  light.position.set(1, 1, 1);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.update();
-
-    const light = new THREE.DirectionalLight(0xffffff, 0.5);
-    light.position.set(1, 1, 1);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-    setupFileUpload();
-    createCursorCircle();
-    animate();
-
-    // Call addGUI to initialize the GUI
-    addGUI();
-
+  // 加载模型并创建其他元素
+  loadModel();
+  createCursorCircle();
+  animate();
+  addGUI();
 }
 
+// 加载 STL 模型
+function loadModel() {
+  const loader = new STLLoader();
+  loader.load('/upper.stl', function (geometry) {
+    geometry.computeBoundsTree();
 
-function setupFileUpload() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadButton = document.getElementById('uploadButton');
+    const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
+    colorArray.fill(255);
+    const colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
+    colorAttr.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('color', colorAttr);
 
-    // Trigger the file input click when the upload button is clicked
-    uploadButton.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // Listen for file selection
-    fileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file && file.name.endsWith('.stl')) {
-            const fileURL = URL.createObjectURL(file);
-            loadModel(fileURL); // Pass the selected file to the loadModel function
-        } else {
-            console.error('Please upload a valid STL file.');
-        }
-    });
-}
-function loadModel(stlPath) {
-    const loader = new STLLoader();
-    if (targetMesh) {
-        scene.remove(targetMesh);
-        targetMesh.geometry.dispose();
-        targetMesh.material.dispose(); 
-        targetMesh = null; 
-    }
-    loader.load(stlPath, function (geometry) {
-        geometry.computeBoundsTree();
-
-        const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
-        colorArray.fill(255);
-        const colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
-        colorAttr.setUsage(THREE.DynamicDrawUsage);
-        geometry.setAttribute('color', colorAttr);
-
-        const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0, vertexColors: true });
-        targetMesh = new THREE.Mesh(geometry, material);
-        scene.add(targetMesh);
-    }, undefined, function (error) {
-        console.error('An error occurred while loading the STL file:', error);
-    });
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0, vertexColors: true });
+    targetMesh = new THREE.Mesh(geometry, material);
+    scene.add(targetMesh);
+  }, undefined, function (error) {
+    console.error('An error occurred while loading the STL file:', error);
+  });
 }
 
+// 创建指示器圆形
 function createCursorCircle() {
-    const geometry = new THREE.CircleGeometry(5, 32);
-    cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-    cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
-    cursorCircle.position.z = 1; // Ensure it's in front of the scene
-    scene.add(cursorCircle);
+  const geometry = new THREE.CircleGeometry(5, 32);
+  cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+  cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
+  cursorCircle.position.z = 1;
+  scene.add(cursorCircle);
 }
 
+// 鼠标移动事件处理
 function onPointerMove(e) {
-    if (mode === 'painting') {
-        const mouse = new THREE.Vector2();
-        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  if (mode === 'painting') {
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
 
-        const intersects = raycaster.intersectObject(targetMesh, true);
-        if (intersects.length > 0) {
-            const intersect = intersects[0];
-            cursorCircle.position.copy(intersect.point);
+    const intersects = raycaster.intersectObject(targetMesh, true);
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      cursorCircle.position.copy(intersect.point);
 
-            if (isPainting) {
-                paintIntersectedArea(intersect);
-            }
-        } else {
-            cursorCircle.position.set(10000, 10000, 10000); // Move out of view
-        }
+      if (isPainting) {
+        paintIntersectedArea(intersect);
+      }
+    } else {
+      cursorCircle.position.set(10000, 10000, 10000); // 将指示器移动到视野外
     }
+  }
 }
 
+// 鼠标按下事件处理
 function onPointerDown(e) {
-    if (mode === 'painting' && e.button === 0) { // Left mouse button
-        isPainting = true;
-    }
+  if (mode === 'painting' && e.button === 0) { // 左键
+    isPainting = true;
+  }
 }
 
+// 鼠标松开事件处理
 function onPointerUp(e) {
-    if (mode === 'painting' && e.button === 0) { // Left mouse button
-        isPainting = false;
-    }
+  if (mode === 'painting' && e.button === 0) { // 左键
+    isPainting = false;
+  }
 }
 
-let paintColor = new THREE.Color(1, 0, 0); // 默认颜色为红色
+// 绘制选定区域
+let paintColor = new THREE.Color(1, 0, 0); // 默认绘制颜色为红色
 
 function paintIntersectedArea(intersect) {
-    const indices = [];
-    const tempVec = new THREE.Vector3();
+  const indices = [];
+  const tempVec = new THREE.Vector3();
 
-    const inverseMatrix = new THREE.Matrix4();
-    inverseMatrix.copy(targetMesh.matrixWorld).invert();
+  const inverseMatrix = new THREE.Matrix4();
+  inverseMatrix.copy(targetMesh.matrixWorld).invert();
 
-    const circleRadius = cursorCircle.scale.x * 5; // 使用cursorCircle的缩放比例来调整绘制半径
-    const sphere = new THREE.Sphere();
-    sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
-    sphere.radius = circleRadius;
+  const circleRadius = cursorCircle.scale.x * 5; // 使用指示器的缩放比例调整绘制半径
+  const sphere = new THREE.Sphere();
+  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
+  sphere.radius = circleRadius;
 
-    targetMesh.geometry.boundsTree.shapecast({
-        intersectsBounds: box => {
-            const intersects = sphere.intersectsBox(box);
-            if (intersects) {
-                const { min, max } = box;
-                for (let x = 0; x <= 1; x++) {
-                    for (let y = 0; y <= 1; y++) {
-                        for (let z = 0; z <= 1; z++) {
-                            tempVec.set(
-                                x === 0 ? min.x : max.x,
-                                y === 0 ? min.y : max.y,
-                                z === 0 ? min.z : max.z
-                            );
-                            if (!sphere.containsPoint(tempVec)) {
-                                return INTERSECTED;
-                            }
-                        }
-                    }
-                    return CONTAINED;
-                }
+  targetMesh.geometry.boundsTree.shapecast({
+    intersectsBounds: box => {
+      const intersects = sphere.intersectsBox(box);
+      if (intersects) {
+        const { min, max } = box;
+        for (let x = 0; x <= 1; x++) {
+          for (let y = 0; y <= 1; y++) {
+            for (let z = 0; z <= 1; z++) {
+              tempVec.set(
+                x === 0 ? min.x : max.x,
+                y === 0 ? min.y : max.y,
+                z === 0 ? min.z : max.z
+              );
+              if (!sphere.containsPoint(tempVec)) {
+                return INTERSECTED;
+              }
             }
-            return intersects ? INTERSECTED : NOT_INTERSECTED;
-        },
-        intersectsTriangle: (tri, i, contained) => {
-            if (contained || tri.intersectsSphere(sphere)) {
-                const i3 = 3 * i;
-                indices.push(i3, i3 + 1, i3 + 2);
-            }
-            return false;
+          }
+          return CONTAINED;
         }
-    });
-
-    const colorAttr = targetMesh.geometry.getAttribute('color');
-    for (let i = 0, l = indices.length; i < l; i++) {
-        const index = targetMesh.geometry.index.getX(indices[i]);
-        colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+      }
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
+    },
+    intersectsTriangle: (tri, i, contained) => {
+      if (contained || tri.intersectsSphere(sphere)) {
+        const i3 = 3 * i;
+        indices.push(i3, i3 + 1, i3 + 2);
+      }
+      return false;
     }
-    colorAttr.needsUpdate = true;
+  });
+
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  for (let i = 0, l = indices.length; i < l; i++) {
+    const index = targetMesh.geometry.index.getX(indices[i]);
+    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+  }
+  colorAttr.needsUpdate = true;
 }
 
-
+// GUI 控制
 function addGUI() {
-    const gui = new GUI();
-    const params = {
-        mode: 'dragging',
-        cursorOpacity: cursorCircleMaterial.opacity,
-        cursorColor: cursorCircleMaterial.color.getHex(),
-        cursorSize: 5,
-        renderColor: paintColor.getHex() // 这是用于设置绘制颜色的参数
-    };
+  const gui = new GUI();
+  const params = {
+    mode: 'dragging',
+    cursorOpacity: cursorCircleMaterial.opacity,
+    cursorColor: cursorCircleMaterial.color.getHex(),
+    cursorSize: 5,
+    renderColor: paintColor.getHex() // 设置绘制颜色
+  };
 
-    gui.add(params, 'mode', ['painting', 'dragging']).name('Mode').onChange(value => {
-        mode = value;
-        updateControls();
-        updateEventListeners();
-    });
+  gui.add(params, 'mode', ['painting', 'dragging']).name('Mode').onChange(value => {
+    mode = value;
+    updateControls();
+    updateEventListeners();
+  });
 
-    const cursorFolder = gui.addFolder('Cursor Circle');
-    cursorFolder.add(params, 'cursorOpacity', 0, 1).name('Opacity').onChange(value => cursorCircleMaterial.opacity = value);
-    cursorFolder.addColor(params, 'cursorColor').name('Color').onChange(value => cursorCircleMaterial.color.setHex(value));
-    cursorFolder.add(params, 'cursorSize', 1, 20).name('Size').onChange(value => {
-        cursorCircle.scale.set(value / 5, value / 5, value / 5);
-    });
-    cursorFolder.open();
+  const cursorFolder = gui.addFolder('Cursor Circle');
+  cursorFolder.add(params, 'cursorOpacity', 0, 1).name('Opacity').onChange(value => cursorCircleMaterial.opacity = value);
+  cursorFolder.addColor(params, 'cursorColor').name('Color').onChange(value => cursorCircleMaterial.color.setHex(value));
+  cursorFolder.add(params, 'cursorSize', 1, 20).name('Size').onChange(value => {
+    cursorCircle.scale.set(value / 5, value / 5, value / 5);
+  });
+  cursorFolder.open();
 
-    const renderFolder = gui.addFolder('Render Color');
-    renderFolder.addColor(params, 'renderColor').name('Render Color').onChange(value => {
-        if (typeof value === 'string') {
-            paintColor.set(value); // Handle string color values
-        } else {
-            paintColor.setHex(value); // Handle hex color values
-        }
-    });
-    renderFolder.open();
+  const renderFolder = gui.addFolder('Render Color');
+  renderFolder.addColor(params, 'renderColor').name('Render Color').onChange(value => {
+    if (typeof value === 'string') {
+      paintColor.set(value); // 处理字符串颜色值
+    } else {
+      paintColor.setHex(value); // 处理十六进制颜色值
+    }
+  });
+  renderFolder.open();
 }
 
-
-
+// 更新控制
 function updateControls() {
-    if (mode === 'dragging') {
-        controls.enableRotate = true; // Allow rotation
-        controls.enableZoom = true;   // Allow zoom
-        controls.enablePan = true;    // Allow panning
-    } else {
-        controls.enableRotate = false; // Disable rotation
-        controls.enableZoom = false;   // Disable zoom
-        controls.enablePan = false;     // Disable panning
-    }
+  if (mode === 'dragging') {
+    controls.enableRotate = true; // 允许旋转
+    controls.enableZoom = true;   // 允许缩放
+    controls.enablePan = true;    // 允许平移
+  } else {
+    controls.enableRotate = false; // 禁止旋转
+    controls.enableZoom = false;   // 禁止缩放
+    controls.enablePan = false;    // 禁止平移
+  }
 }
 
+// 更新事件监听器
 function updateEventListeners() {
-    if (mode === 'painting') {
-        window.addEventListener('pointermove', onPointerMove, false);
-        window.addEventListener('pointerdown', onPointerDown, false);
-        window.addEventListener('pointerup', onPointerUp, false);
-    } else {
-        window.removeEventListener('pointermove', onPointerMove, false);
-        window.removeEventListener('pointerdown', onPointerDown, false);
-        window.removeEventListener('pointerup', onPointerUp, false);
-    }
+  if (mode === 'painting') {
+    window.addEventListener('pointermove', onPointerMove, false);
+    window.addEventListener('pointerdown', onPointerDown, false);
+    window.addEventListener('pointerup', onPointerUp, false);
+  } else {
+    window.removeEventListener('pointermove', onPointerMove, false);
+    window.removeEventListener('pointerdown', onPointerDown, false);
+    window.removeEventListener('pointerup', onPointerUp, false);
+  }
 }
 
+// 动画循环
 function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
 
-const Render = () => {
-    // 调用初始化函数
-    init();
-    // 返回一个空的 React 元素，因为渲染完全由 Three.js 控制
-    return null;
-};
-
-// 确保正确导出 Render 组件
 export default Render;
