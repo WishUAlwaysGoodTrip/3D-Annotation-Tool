@@ -82,7 +82,7 @@
   filter: brightness(1.2);
 }
 
-#toolbar #line .toolbar-icon {
+#toolbar #button2 .toolbar-icon {
   rotate: 45deg;
   padding: 25% 0;
 

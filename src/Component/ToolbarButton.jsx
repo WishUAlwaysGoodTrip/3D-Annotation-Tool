@@ -1,16 +1,13 @@
-import React from 'react';
+
 import PropTypes from 'prop-types';
 
-const ToolbarButton = ({ normalIcon, hoverIcon, isActive, onClick, id, mode }) => {
-  const handleClick = () => {
-    onClick(id); 
-  };
+const ToolbarButton = ({ normalIcon, hoverIcon, isActive, onClick, id }) => {
 
   return (
     <button
       className={`toolbar-button ${isActive ? 'active' : ''}`}
+      onClick={onClick}
       id={id}
-      onClick={handleClick}
     >
       <img src={isActive ? hoverIcon : normalIcon} alt="button" className="toolbar-icon" />
     </button>
@@ -23,7 +20,6 @@ ToolbarButton.propTypes = {
   isActive: PropTypes.bool.isRequired,
   onClick: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
-  mode: PropTypes.string.isRequired,
 };
 
 export default ToolbarButton;
