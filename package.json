@@ -9,10 +9,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "NODE_ENV=development concurrently \"vite\" \"electron .\"",
-    "electron-build": "NODE_ENV=production electron ."
+    "start": "cross-env NODE_ENV=development concurrently \"vite\" \"electron .\"",
+    "electron-build": "cross-env NODE_ENV=production electron ."
   },
   "dependencies": {
+    "concurrently": "^8.2.2",
     "lil-gui": "^0.19.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -26,6 +27,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "cross-env": "^7.0.3",
     "electron": "^32.0.2",
     "eslint": "^9.9.0",
     "eslint-plugin-react": "^7.35.0",
