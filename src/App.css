@@ -1,0 +1,123 @@
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.app-header {
+  position: absolute;  /* 绝对定位 */
+  top: 10px;           /* 离顶部 10px */
+  left: 10px;          /* 离左边 10px */
+  padding: 0;
+}
+
+.upload-button {
+  display: flex;
+  align-items: center;
+}
+
+.upload-button button {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #606052;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.upload-button button:hover {
+  background-color: #646cff;
+}
+
+.upload-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 10px;  /* 图标与文本之间的间距 */
+}
+
+#toolbar {
+  position: fixed;
+  top: 6vh;
+  left: 0;
+  width: 40px;
+  height: 90vh; 
+  padding: 2px;
+  border-radius: 10px;
+  background-color: rgba(51, 51, 51, 0.79);
+  box-sizing: border-box;
+}
+
+.toolbar-button {
+  width: 25px;
+  height: 25px;
+  padding: 2px;
+  background-color: rgba(51, 51, 51, 0.79);
+  box-sizing: border-box;
+}
+
+.toolbar-button:hover {
+  width: 25px;
+  height: 25px;
+  padding: 2px;
+  background-color: rgba(51, 51, 51, 0.79);
+  box-sizing: border-box;
+}
+
+.toolbar-icon {
+  width: 80%;
+  height: 80%;
+}
+
+.toolbar-button.active {
+  background-color: rgba(215, 215, 215, 0.3);
+}
+
+.toolbar-button.active .toolbar-icon {
+  filter: brightness(1.2);
+}
+
+#toolbar #button2 .toolbar-icon {
+  rotate: 45deg;
+  padding: 25% 0;
+
+}
