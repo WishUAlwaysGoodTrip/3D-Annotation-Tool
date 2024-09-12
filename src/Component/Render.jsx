@@ -12,7 +12,7 @@ import {
 } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
-const Render = ({ mode: incomingMode }) => {
+const Render = ({ mode: incomingMode , file}) => {
   useEffect(() => {
     init(); // 初始化 Three.js 场景
 
@@ -29,8 +29,15 @@ const Render = ({ mode: incomingMode }) => {
     mode = incomingMode; // 使用传入的 mode 更新全局 mode 变量
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
-  }, [incomingMode]); // 仅在 incomingMode 变化时运行
+  }, [incomingMode]);
+   // 仅在 incomingMode 变化时运行
 
+     // 监听 file 的变化并加载 STL 模型
+  useEffect(() => {
+    if (file) {
+      loadModel(file); // 加载传入的 STL 文件
+    }
+  }, [file]); // 当 file 变化时调用
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
 
@@ -99,7 +106,6 @@ function init() {
   scene.add(fillLight);
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-  loadModel(); // 加载 STL 模型
   createCursorCircle(); // 创建指示器
   animate(); // 启动动画循环
   addGUI(); // 添加 GUI 控制
@@ -109,9 +115,16 @@ function init() {
 }
 
 // 加载 STL 模型
-function loadModel() {
+function loadModel(file) {
   const loader = new STLLoader();
-  loader.load('/upper.stl', function (geometry) {
+  const fileURL = URL.createObjectURL(file);  // 将文件转换为URL
+  if (targetMesh) {
+    scene.remove(targetMesh);
+    targetMesh.geometry.dispose();
+    targetMesh.material.dispose(); 
+    targetMesh = null; 
+  }
+  loader.load(fileURL, function (geometry) {
     geometry.computeBoundsTree();
 
     // 初始化颜色属性

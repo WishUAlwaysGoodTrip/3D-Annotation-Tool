@@ -41,6 +41,111 @@
   color: #888;
 }
 
+.app-header {
+  position: absolute;  /* 绝对定位 */
+  top: 10px;           /* 离顶部 10px */
+  left: 10px;          /* 离左边 10px */
+  padding: 0;
+}
+
+.upload-button {
+  display: flex;
+  align-items: center;
+}
+
+.upload-button button {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #606052;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.upload-button button:hover {
+  background-color: #646cff;
+}
+
+.upload-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 10px;  /* 图标与文本之间的间距 */
+}
+.folder-path {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+.file-list {
+  position: absolute;
+  top: 60px; /* 根据需要调整位置 */
+  left: 20px; /* 根据需要调整位置 */
+  width: 200px; /* 根据内容调整宽度 */
+  max-height: 400px;
+  overflow-y: auto;
+  background: rgba(215,215,215, 0.8);
+  border: 1px solid #211b1b;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 5px;
+}
+.recent-file-list {
+  position: absolute;
+  top: 50%; /* 将它置于垂直居中的位置 */
+  left: 50%; /* 将它置于水平居中的位置 */
+  transform: translate(-50%, -50%); /* 将它居中对齐 */
+  width: 300px; /* 设置适合的宽度 */
+  max-height: 400px; /* 设置最大高度 */
+  overflow-y: auto;
+  background: rgba(215,215,215, 0.8);
+  border: 1px solid #211b1b;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 5px;
+}
+.recent-file-list button {
+  display: block;
+  width: 100%;
+  margin-top: 20px; /* 这里增加与上方内容的距离 */
+  padding: 10px;
+  background-color: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.recent-file-list button:hover {
+  background-color: #525357;
+}
+
+
+/* 拖动条样式 */
+.resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px; /* 拖动条宽度 */
+  height: 100%; /* 拖动条高度与容器相同 */
+  background: #666; /* 拖动条颜色 */
+  cursor: ew-resize; /* 光标样式 */
+}
+.file-item {
+  margin: 5px 0;
+  padding: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  color: #555555;
+}
+
+.file-item:hover {
+  background-color: #e7e6e6;
+}
+
 #toolbar {
   position: fixed;
   top: 6vh;
@@ -87,3 +192,4 @@
   padding: 25% 0;
 
 }
+
