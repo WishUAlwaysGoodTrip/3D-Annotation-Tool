@@ -43,8 +43,11 @@ function createHotkeysWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
-    }
+    },
+    autoHideMenuBar: true, 
   });
+
+  hotkeysWindow.setMenuBarVisibility(false);
 
   // 加载 HTML 或者 URL 页面
   const isDev = process.env.NODE_ENV === 'development';
