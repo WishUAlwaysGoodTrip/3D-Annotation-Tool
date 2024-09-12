@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=development concurrently \"vite\" \"electron .\"",
+    "electron": "vite build && electron .",
     "electron-build": "cross-env NODE_ENV=production electron ."
   },
   "dependencies": {

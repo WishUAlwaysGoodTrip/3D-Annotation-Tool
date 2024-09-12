@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Render from './Component/Render.jsx';
-import ToolbarButton from './Component/ToolbarButton.jsx';
+import Toolbar from './Component/Toolbar.jsx';
 import FolderUploadButton from './Component/FolderUploadButton.jsx';
 import RecentFilesList from './Component/RecentFilesList.jsx';
 import { convertFileObjectToBlob } from './Component/convertFileObjectToBlob';
 
 
+
 const { ipcRenderer } = window.require('electron');  // 使用 ipcRenderer 与主进程通信
 
 const App = () => {
-  const [activeButton, setActiveButton] = useState('button4');
+  const [activeButton, setActiveButton] = useState('button4'); // 将状态移到这里
   const [mode, setMode] = useState('dragging'); 
   const [uploadedFile, setUploadedFile] = useState(null);  // 存储上传的文件
   const [uploadedFiles, setUploadedFiles] = useState([]);  // 存储上传的文件夹中的.stl文件
@@ -127,36 +128,10 @@ const App = () => {
           toggleRecentFiles={toggleRecentFiles} 
         />
       )}
-      <div id="toolbar">
-        <ToolbarButton 
-          normalIcon="./assets/normal_u110.svg" 
-          hoverIcon="./assets/mouseover_u110_mouseover.svg" 
-          isActive={activeButton === 'button1'} 
-          onClick={() => handleButtonClick('button1')} 
-          id="button1" 
-        />
-        <ToolbarButton 
-          normalIcon="./assets/normal_u111.svg" 
-          hoverIcon="./assets/mouseover_u111_mouseover.svg" 
-          isActive={activeButton === 'button2'} 
-          onClick={() => handleButtonClick('button2')} 
-          id="button2" 
-        />
-        <ToolbarButton 
-          normalIcon="./assets/normal_u105.svg" 
-          hoverIcon="./assets/mouseover_u105_mouseover.svg" 
-          isActive={activeButton === 'button3'} 
-          onClick={() => handleButtonClick('button3', 'painting')} 
-          id="button3" 
-        />
-        <ToolbarButton 
-          normalIcon="./assets/normal_u109.svg" 
-          hoverIcon="./assets/mouseover_u109_mouseover.svg" 
-          isActive={activeButton === 'button4'} 
-          onClick={() => handleButtonClick('button4', 'dragging')} 
-          id="button4" 
-        />
-      </div>
+      <Toolbar 
+        activeButton={activeButton} 
+        handleButtonClick={handleButtonClick} 
+      />
       <Render mode={mode} file={uploadedFile} />
     </div>
   );
