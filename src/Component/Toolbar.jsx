@@ -1,10 +1,15 @@
 
 import ToolbarButton from './ToolbarButton';
-import PropTypes from 'prop-types';
 import { useState } from 'react';
+import useModeStore from '../stores/useModeStore'
 
-const Toolbar = ({ handleButtonClick }) => {
+const Toolbar = () => {
+  const { setMode } = useModeStore();
   const [activeButton, setActiveButton] = useState('button4');
+  const handleButtonClick = (newMode) => {
+    setMode(newMode);
+    console.log(newMode)
+  };
   return (
     <div id="toolbar">
       <ToolbarButton 
@@ -12,7 +17,7 @@ const Toolbar = ({ handleButtonClick }) => {
         hoverIcon="./assets/mouseover_u110_mouseover.svg" 
         isActive={activeButton === 'button1'} 
         onClick={() => {
-          handleButtonClick('');
+          handleButtonClick('point');
           setActiveButton("button1");
         }} 
         id="button1" 
@@ -22,7 +27,7 @@ const Toolbar = ({ handleButtonClick }) => {
         hoverIcon="./assets/mouseover_u111_mouseover.svg" 
         isActive={activeButton === 'button2'} 
         onClick={() => {
-          handleButtonClick('');
+          handleButtonClick('line');
           setActiveButton("button2");
         }} 
         id="button2" 
@@ -50,10 +55,5 @@ const Toolbar = ({ handleButtonClick }) => {
     </div>
   );
 };
-
-Toolbar.propTypes = {
-    activeButton: PropTypes.string.isRequired,
-    handleButtonClick: PropTypes.func.isRequired,
-  };
 
 export default Toolbar;

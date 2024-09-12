@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import useModeStore from '../stores/useModeStore';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { 
@@ -12,7 +13,8 @@ import {
 } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
-const Render = ({ mode: incomingMode , file}) => {
+const Render = ({file}) => {
+  const { mode } = useModeStore();
   useEffect(() => {
     init(); // 初始化 Three.js 场景
 
@@ -25,11 +27,12 @@ const Render = ({ mode: incomingMode , file}) => {
     };
   }, []);
 
-  useEffect(() => {
-    mode = incomingMode; // 使用传入的 mode 更新全局 mode 变量
+  useEffect(() => { 
+    threeMode = mode;
+    console.log("render mode change")
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
-  }, [incomingMode]);
+  }, [mode]);
    // 仅在 incomingMode 变化时运行
 
      // 监听 file 的变化并加载 STL 模型
@@ -51,7 +54,7 @@ let targetMesh;
 let scene, camera, renderer, controls;
 let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
-let mode = 'dragging'; // 默认模式为拖拽
+let threeMode = 'dragging'; // 默认模式为拖拽
 let gui; // 全局 GUI 变量
 
 // 初始化场景和 Three.js 渲染器
@@ -185,7 +188,7 @@ function updateCursorCircleOrientation() {
 
 // 鼠标移动事件处理
 function onPointerMove(e) {
-  if (mode === 'painting') {
+  if (threeMode === 'painting') {
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -214,14 +217,14 @@ function onPointerMove(e) {
 
 // 鼠标按下事件处理
 function onPointerDown(e) {
-  if (mode === 'painting' && e.button === 0) { // 左键
+  if (threeMode === 'painting' && e.button === 0) { // 左键
     isPainting = true;
   }
 }
 
 // 鼠标松开事件处理
 function onPointerUp(e) {
-  if (mode === 'painting' && e.button === 0) { // 左键
+  if (threeMode === 'painting' && e.button === 0) { // 左键
     isPainting = false;
   }
 }
@@ -287,7 +290,7 @@ function addGUI() {
 
   gui = new GUI(); // 创建新的 GUI 实例
   const params = {
-    mode: 'dragging',
+    threeMode: 'dragging',
     cursorOpacity: cursorCircleMaterial.opacity,
     cursorColor: cursorCircleMaterial.color.getHex(),
     cursorSize: 2,
@@ -330,10 +333,11 @@ function addGUI() {
 
 // 更新控制
 function updateControls() {
-  if (mode === 'dragging') {
+  if (threeMode === 'dragging') {
     controls.enableRotate = true; // 允许旋转
     controls.enableZoom = true;   // 允许缩放
     controls.enablePan = true;    // 允许平移
+    console.log("render drag")
   } else {
     controls.enableRotate = false; // 禁止旋转
     controls.enableZoom = false;   // 禁止缩放
@@ -343,11 +347,11 @@ function updateControls() {
 
 // 更新事件监听器
 function updateEventListeners() {
-  if (mode === 'painting') {
+  if (threeMode === 'painting') {
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
-
+    console.log("render painting")
 
   } else {
     window.removeEventListener('pointermove', onPointerMove, false);

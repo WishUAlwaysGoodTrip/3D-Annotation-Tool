@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import './App.css';
 import Render from './Component/Render.jsx';
 import Toolbar from './Component/Toolbar.jsx';
@@ -10,8 +10,6 @@ import { useRecentFiles } from './hooks/useRecentFiles';
 import { useIpcRenderer } from './hooks/useIpcRenderer';
 
 const App = () => {
-  
-  const [mode, setMode] = useState('dragging');
   const [listWidth, setListWidth] = useState(250); // 默认宽度，可调整
   // const [showFileList, setShowFileList] = useState(false); // 控制显示文件列表
 
@@ -23,10 +21,6 @@ const App = () => {
 
   const handleResize = (newWidth) => {
     setListWidth(newWidth); // 更新文件列表的宽度
-  };
-
-  const handleButtonClick = (newMode = mode) => {
-    setMode(newMode);
   };
 
   const handleFileSelect = (file) => {
@@ -55,10 +49,8 @@ const App = () => {
           toggleRecentFiles={toggleRecentFiles} 
         />
       )}
-      <Toolbar
-        handleButtonClick={handleButtonClick}
-      />
-      <Render mode={mode} file={uploadedFile} />
+      <Toolbar />
+      <Render file={uploadedFile} />
     </div>
   );
 };
