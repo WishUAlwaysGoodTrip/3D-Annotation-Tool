@@ -1,15 +1,17 @@
-
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 
 const ToolbarButton = ({ normalIcon, hoverIcon, isActive, onClick, id }) => {
-
+  const [isHover, setIsHover] = useState(false);
   return (
     <button
       className={`toolbar-button ${isActive ? 'active' : ''}`}
       onClick={onClick}
       id={id}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
     >
-      <img src={isActive ? hoverIcon : normalIcon} alt="button" className="toolbar-icon" />
+      <img src={isHover ? hoverIcon : normalIcon} alt="button" className="toolbar-icon" />
     </button>
   );
 };

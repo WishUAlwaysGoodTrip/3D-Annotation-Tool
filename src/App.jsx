@@ -10,7 +10,7 @@ import { useRecentFiles } from './hooks/useRecentFiles';
 import { useIpcRenderer } from './hooks/useIpcRenderer';
 
 const App = () => {
-  const [activeButton, setActiveButton] = useState('button4');
+  
   const [mode, setMode] = useState('dragging');
   const [listWidth, setListWidth] = useState(250); // 默认宽度，可调整
   // const [showFileList, setShowFileList] = useState(false); // 控制显示文件列表
@@ -25,8 +25,7 @@ const App = () => {
     setListWidth(newWidth); // 更新文件列表的宽度
   };
 
-  const handleButtonClick = (buttonId, newMode = mode) => {
-    setActiveButton(buttonId);
+  const handleButtonClick = (newMode = mode) => {
     setMode(newMode);
   };
 
@@ -57,7 +56,6 @@ const App = () => {
         />
       )}
       <Toolbar
-        activeButton={activeButton}
         handleButtonClick={handleButtonClick}
       />
       <Render mode={mode} file={uploadedFile} />
