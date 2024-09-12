@@ -5,15 +5,18 @@ import Toolbar from './Component/Toolbar.jsx';
 import FolderUploadButton from './Component/FolderUploadButton.jsx';
 import RecentFilesList from './Component/RecentFilesList.jsx';
 import { convertFileObjectToBlob } from './Component/convertFileObjectToBlob';
-import { useFileUpload } from './hooks/useFileUpload.js'
+//import { useFileUpload } from './hooks/useFileUpload.js'
+import { useFileUploadStore } from './stores/useFileUploadStore.js'
 import { useRecentFiles } from './hooks/useRecentFiles';
+//import { useRecentFilesStore } from './stores/useRecentFilesStore.js'
 import { useIpcRenderer } from './hooks/useIpcRenderer';
 
 const App = () => {
   const [listWidth, setListWidth] = useState(250); // 默认宽度，可调整
   // const [showFileList, setShowFileList] = useState(false); // 控制显示文件列表
 
-  const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUpload();
+  //const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUpload();
+  const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUploadStore();
 
   const { recentFiles, showRecentFiles, toggleRecentFiles, setRecentFiles, setShowRecentFiles } = useRecentFiles(uploadedFile);
 
