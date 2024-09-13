@@ -1,0 +1,128 @@
+.annotation-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh; /* Full viewport height */
+  width: 200px; /* Adjust as necessary */
+  background-color: #3a3a3a;
+  padding: 20px;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5); /* Shadow to give separation from main content */
+  z-index: 1000; /* Make sure it stays above the content */
+}
+
+.dropdown {
+  margin-bottom: 20px;
+}
+
+.dropdown label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.dropdown select {
+  width: 100%;
+  padding: 5px; /* 增加内边距以确保文字和边框之间有适当间距 */
+  background-color: #676767; /* 初始背景颜色 */
+  font-family: "Roboto Medium", "Roboto", sans-serif;
+  color: white; /* 文字颜色 */
+  font-size: 13px; /* 字体大小 */
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.2 ease; /* 过渡效果，颜色变换时更流畅 */
+}
+
+/* 当鼠标悬停在选择框上时的颜色变化 */
+.dropdown select:hover {
+  background-color: #777777; /* 鼠标悬停时的背景颜色 */
+}
+
+.tooth-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 200px; /* 设置最大高度，超过后会出现滚动条 */
+  overflow-y: auto; /* 当内容溢出时，启用垂直滚动条 */
+  padding-right: 10px; /* 给滚动条预留空间 */
+}
+
+.tooth-item {
+  width: 150px;
+  height: 16px;
+  background-color: rgba(255, 255, 255, 0);
+  font-family: "Arial Bold", "Arial", sans-serif;
+  box-sizing: border-box; 
+  font-weight: 700; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.tooth-item span {
+  color: #989797; /* 控制文字颜色 */
+}
+
+.circle {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  margin-right: 65px;
+}
+
+
+.annotation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.remove-button {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 3px 5px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.remove-button:hover {
+  background-color: darkred;
+}
+.custom-input {
+  background-color: #676767; /* 修改输入框背景色 */
+  color: #fff; /* 修改输入框文字颜色 */
+  border: 1px solid #555; /* 修改边框颜色 */
+  padding: 5px; /* 内边距 */
+  border-radius: 5px; /* 添加圆角 */
+}
+
+.custom-input::placeholder {
+  color: #bfbfbf; /* 修改占位符文字颜色 */
+}
+.custom-button {
+  background-color: #786969; /* 初始背景色，使用绿色可以让按钮更明显 */
+  color: white; /* 按钮文字颜色 */
+  border: none; /* 移除默认边框 */
+  padding: 5px 5px; /* 调整按钮的内边距 */
+  border-radius: 8px; /* 添加圆角 */
+  cursor: pointer; /* 鼠标指针 */
+  font-size: 14px; /* 调整字体大小 */
+  transition: background-color 0.3s, transform 0.2s ease; /* 平滑的背景色变化和点击时的缩放效果 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 添加按钮阴影，使其有立体效果 */
+}
+
+.custom-button:hover {
+  background-color: #777777; /* 鼠标悬停时改变背景色 */
+}
+
+.custom-button:active {
+  transform: scale(0.98); /* 点击时按钮稍微缩小，产生按压效果 */
+  background-color: #9d9e9d; /* 点击时改变按钮背景色 */
+}
+
+
