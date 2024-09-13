@@ -52,6 +52,16 @@ const Toolbar = () => {
         }} 
         id="button4" 
       />
+      <ToolbarButton 
+        normalIcon="./assets/normal_u112.svg" 
+        hoverIcon="./assets/mouseover_u112_mouseover.svg" 
+        isActive={activeButton === 'button5'} 
+        onClick={() => {
+          handleButtonClick('erasing');
+          setActiveButton("button5");
+        }} 
+        id="button5" 
+      />
     </div>
   );
 };

@@ -117,32 +117,43 @@ function init() {
   updateEventListeners();
 }
 
+
 // 加载 STL 模型
 function loadModel(file) {
   const loader = new STLLoader();
-  const fileURL = URL.createObjectURL(file);  // 将文件转换为URL
+  const fileURL = URL.createObjectURL(file); // 将文件转换为URL
   if (targetMesh) {
     scene.remove(targetMesh);
     targetMesh.geometry.dispose();
-    targetMesh.material.dispose(); 
-    targetMesh = null; 
+    targetMesh.material.dispose();
+    targetMesh = null;
   }
   loader.load(fileURL, function (geometry) {
     geometry.computeBoundsTree();
 
-    // 初始化颜色属性
-    const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
-    colorArray.fill(255); // 使用白色作为初始颜色
-    const colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
-    colorAttr.setUsage(THREE.DynamicDrawUsage);
-    geometry.setAttribute('color', colorAttr);
+    // 检查几何体是否已有颜色属性，如果有，直接使用
+    let colorAttr = geometry.getAttribute('color');
+    if (!colorAttr) {
+      // 如果没有颜色属性，初始化为白色
+      const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
+      colorArray.fill(255); // 设置为白色
+      colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
+      geometry.setAttribute('color', colorAttr);
+    }
+
+    // 保存原始颜色（无论是已有的还是新建的）
+    const originalColors = new Float32Array(colorAttr.array.length);
+    for (let i = 0; i < colorAttr.array.length; i++) {
+      originalColors[i] = colorAttr.array[i] / 255; // 转换为 0-1 范围
+    }
+    geometry.userData.originalColors = originalColors; // 保存到 userData 中
 
     // 创建材质并启用顶点颜色
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.3,
       metalness: 0,
-      vertexColors: true, // 使用顶点颜色
+      vertexColors: true,
     });
 
     // 创建网格对象
@@ -153,7 +164,6 @@ function loadModel(file) {
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
     targetMesh.position.sub(center);
-        // 旋转模型
     targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
 
     // 再次调整位置以确保模型仍然在中心
@@ -162,11 +172,11 @@ function loadModel(file) {
     targetMesh.position.sub(center);
 
     scene.add(targetMesh);
-
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
+
 
 // 创建指示器圆形
 function createCursorCircle() {
@@ -188,7 +198,8 @@ function updateCursorCircleOrientation() {
 
 // 鼠标移动事件处理
 function onPointerMove(e) {
-  if (threeMode === 'painting') {
+  // 判断当前模式是绘画还是橡皮擦
+  if (threeMode === 'painting' || threeMode === 'erasing') {
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -201,30 +212,37 @@ function onPointerMove(e) {
       const intersect = intersects[0];
       cursorCircle.position.copy(intersect.point);
           // 隐藏光标
-      document.body.style.cursor = 'none'; 
+      document.body.style.cursor = 'none';
 
       if (isPainting) {
-        paintIntersectedArea(intersect);
+        // 新增判断：根据模式决定绘制或擦除
+        if (threeMode === 'painting') {
+          paintIntersectedArea(intersect); // 继续调用绘制函数
+        } else if (threeMode === 'erasing') {
+          eraseIntersectedArea(intersect); // 调用擦除函数
+        }
       }
     } else {
-      cursorCircle.position.set(10000, 10000, 10000); // 将指示器移动到视野外
-      document.body.style.cursor = 'default'; 
+      cursorCircle.position.set(10000, 10000, 10000);
+      document.body.style.cursor = 'default';
     }
 
     updateCursorCircleOrientation();
   }
 }
 
+
+
 // 鼠标按下事件处理
 function onPointerDown(e) {
-  if (threeMode === 'painting' && e.button === 0) { // 左键
+  if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = true;
   }
 }
 
 // 鼠标松开事件处理
 function onPointerUp(e) {
-  if (threeMode === 'painting' && e.button === 0) { // 左键
+  if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = false;
   }
 }
@@ -279,6 +297,73 @@ function paintIntersectedArea(intersect) {
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+  }
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+}
+
+
+
+// 擦除选定区域，恢复为物体的原始颜色
+function eraseIntersectedArea(intersect) {
+  const indices = [];
+  const tempVec = new THREE.Vector3();
+
+  // 获取目标物体的逆矩阵
+  const inverseMatrix = new THREE.Matrix4();
+  inverseMatrix.copy(targetMesh.matrixWorld).invert();
+
+  // 使用指示器的缩放比例调整擦除半径
+  const circleRadius = cursorCircle.scale.x * 5;
+  const sphere = new THREE.Sphere();
+  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
+  sphere.radius = circleRadius;
+
+  // 使用 BVH 树进行空间查询
+  targetMesh.geometry.boundsTree.shapecast({
+    intersectsBounds: (box) => {
+      const intersects = sphere.intersectsBox(box);
+      if (intersects) {
+        const { min, max } = box;
+        for (let x = 0; x <= 1; x++) {
+          for (let y = 0; y <= 1; y++) {
+            for (let z = 0; z <= 1; z++) {
+              tempVec.set(
+                x === 0 ? min.x : max.x,
+                y === 0 ? min.y : max.y,
+                z === 0 ? min.z : max.z
+              );
+              if (!sphere.containsPoint(tempVec)) {
+                return INTERSECTED;
+              }
+            }
+          }
+          return CONTAINED;
+        }
+      }
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
+    },
+    intersectsTriangle: (tri, i, contained) => {
+      if (contained || tri.intersectsSphere(sphere)) {
+        const i3 = 3 * i;
+        indices.push(i3, i3 + 1, i3 + 2);
+      }
+      return false;
+    }
+  });
+
+  // 获取几何体的颜色属性和保存的原始颜色
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  const originalColors = targetMesh.geometry.userData.originalColors;
+
+  // 恢复原始颜色
+  for (let i = 0, l = indices.length; i < l; i++) {
+    const index = targetMesh.geometry.index.getX(indices[i]);
+    colorAttr.setXYZ(
+      index,
+      originalColors[index * 3],
+      originalColors[index * 3 + 1],
+      originalColors[index * 3 + 2]
+    );
   }
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
@@ -347,13 +432,15 @@ function updateControls() {
 
 // 更新事件监听器
 function updateEventListeners() {
-  if (threeMode === 'painting') {
+  if (threeMode === 'painting' || threeMode === 'erasing') {
+    // 在绘画和擦除模式下都添加事件监听器
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
-    console.log("render painting")
+    console.log(`render ${threeMode}`); // 输出当前模式
 
   } else {
+    // 在其他模式下移除事件监听器
     window.removeEventListener('pointermove', onPointerMove, false);
     window.removeEventListener('pointerdown', onPointerDown, false);
     window.removeEventListener('pointerup', onPointerUp, false);

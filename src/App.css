@@ -192,3 +192,9 @@
   box-sizing: border-box;
   rotate: 45deg;
 }
+
+#toolbar #button4 .toolbar-icon {
+  width: 80%;
+  height: 80%;
+}
+
