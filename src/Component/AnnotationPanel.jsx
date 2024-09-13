@@ -17,8 +17,6 @@ const AnnotationPanel = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
 
   const handleAnnotationChange = (e) => {
-    const selected = e.target.value;
-    setSelectedAnnotation(annotations.find(annotation => annotation.name === selected));
     if (e.target.value === 'ADD...') {
       setShowAddInput(true);
     } else{
@@ -36,11 +34,8 @@ const AnnotationPanel = () => {
     }
   };
 
-  const handleRemoveAnnotation = () => {
-    if (selectedAnnotation) {
-      setAnnotations(annotations.filter(annotation => annotation !== selectedAnnotation));
-      setSelectedAnnotation(null);
-    }
+  const handleRemoveAnnotation = (annotationToRemove) => {
+      setAnnotations(annotations.filter(annotation => annotation !== annotationToRemove));
   };
     // 开始编辑注释
   const handleDoubleClick = (index, annotation) => {
@@ -93,11 +88,6 @@ const AnnotationPanel = () => {
               {annotation}
             </option>
           ))}
-          {selectedAnnotation && (
-          <button className="remove-button" onClick={handleRemoveAnnotation}>
-            Remove Selected
-          </button>
-        )}
         </select>
       </div>
 
