@@ -2,6 +2,7 @@
 import ToolbarButton from './ToolbarButton';
 import { useState } from 'react';
 import useModeStore from '../stores/useModeStore'
+import Draggable from 'react-draggable';
 
 const Toolbar = () => {
   const { setMode } = useModeStore();
@@ -11,48 +12,50 @@ const Toolbar = () => {
     console.log(newMode)
   };
   return (
-    <div id="toolbar">
-      <ToolbarButton 
-        normalIcon="./assets/normal_u110.svg" 
-        hoverIcon="./assets/mouseover_u110_mouseover.svg" 
-        isActive={activeButton === 'button1'} 
-        onClick={() => {
-          handleButtonClick('point');
-          setActiveButton("button1");
-        }} 
-        id="button1" 
-      />
-      <ToolbarButton 
-        normalIcon="./assets/normal_u111.svg" 
-        hoverIcon="./assets/mouseover_u111_mouseover.svg" 
-        isActive={activeButton === 'button2'} 
-        onClick={() => {
-          handleButtonClick('line');
-          setActiveButton("button2");
-        }} 
-        id="button2" 
-      />
-      <ToolbarButton 
-        normalIcon="./assets/normal_u105.svg" 
-        hoverIcon="./assets/mouseover_u105_mouseover.svg" 
-        isActive={activeButton === 'button3'} 
-        onClick={() => {
-          handleButtonClick('painting');
-          setActiveButton("button3");
-        }} 
-        id="button3" 
-      />
-      <ToolbarButton 
-        normalIcon="./assets/normal_u109.svg" 
-        hoverIcon="./assets/mouseover_u109_mouseover.svg" 
-        isActive={activeButton === 'button4'} 
-        onClick={() => {
-          handleButtonClick('dragging');
-          setActiveButton("button4");
-        }} 
-        id="button4" 
-      />
-    </div>
+    <Draggable>
+      <div id="toolbar">
+        <ToolbarButton 
+          normalIcon="./assets/normal_u110.svg" 
+          hoverIcon="./assets/mouseover_u110_mouseover.svg" 
+          isActive={activeButton === 'button1'} 
+          onClick={() => {
+            handleButtonClick('point');
+            setActiveButton("button1");
+          }} 
+          id="button1" 
+        />
+        <ToolbarButton 
+          normalIcon="./assets/normal_u111.svg" 
+          hoverIcon="./assets/mouseover_u111_mouseover.svg" 
+          isActive={activeButton === 'button2'} 
+          onClick={() => {
+            handleButtonClick('line');
+            setActiveButton("button2");
+          }} 
+          id="button2" 
+        />
+        <ToolbarButton 
+          normalIcon="./assets/normal_u105.svg" 
+          hoverIcon="./assets/mouseover_u105_mouseover.svg" 
+          isActive={activeButton === 'button3'} 
+          onClick={() => {
+            handleButtonClick('painting');
+            setActiveButton("button3");
+          }} 
+          id="button3" 
+        />
+        <ToolbarButton 
+          normalIcon="./assets/normal_u109.svg" 
+          hoverIcon="./assets/mouseover_u109_mouseover.svg" 
+          isActive={activeButton === 'button4'} 
+          onClick={() => {
+            handleButtonClick('dragging');
+            setActiveButton("button4");
+          }} 
+          id="button4" 
+        />
+      </div>
+    </Draggable>
   );
 };
 
