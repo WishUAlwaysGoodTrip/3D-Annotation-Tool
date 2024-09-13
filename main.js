@@ -74,13 +74,15 @@ function createMenu() {
       submenu: [
         {
           label: 'Developer Tools',
-          accelerator: 'Ctrl+Shift+I',
+          accelerator: 'CmdOrCtrl+Shift+I',
           click() {
             win.webContents.toggleDevTools();
           },
         },
         { label: 'New Project', click() { console.log('New Project'); } },
-        { label: 'Open Folder', click() {     
+        { label: 'Open Folder',
+          accelerator: 'CmdOrCtrl+O',
+          click() {     
           dialog.showOpenDialog({
             properties: ['openDirectory'],  // 允许选择文件夹
           }).then(result => {
@@ -125,16 +127,21 @@ function createMenu() {
                   files: stlFiles
                 });
               } else {
-                console.log('未在所选文件夹及其子文件夹中找到 STL 文件。');
+                dialog.showMessageBox({
+                  type: 'warning',  // 设置为警告框
+                  title: 'No STL Files Found',
+                  message: 'No STL files were found. Please select a folder with STL files.'
+                });
               }
             }
           }).catch(err => {
-            console.log('读取文件夹时出错:', err);
+            console.log('Error in upload folder:', err);
           });
             }
         },
         { 
           label: 'Open File',
+          accelerator: 'CmdOrCtrl+Shift+O', 
           click() {
             dialog.showOpenDialog({
               properties: ['openFile'],
@@ -153,7 +160,6 @@ function createMenu() {
                   size: fs.statSync(filePath).size 
                  }; // 文件大小// 将选择的文件路径发送到渲染进程
                  // 将文件对象发送到渲染进程
-                console.log('File Object Sent:', fileObject);  // 输出文件对象以供调试
                 win.webContents.send('file-selected', fileObject);
               }
             }).catch(err => {
@@ -162,7 +168,9 @@ function createMenu() {
         },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click() { console.log('Save'); } },
         { label: 'Save As…', click() { console.log('Save As…'); } },
-        { label: 'Open Recent', click() { win.webContents.send('open-recent'); } },
+        { label: 'Open Recent', 
+          accelerator: 'CmdOrCtrl+E', 
+          click() { win.webContents.send('open-recent'); } },
         { label: 'Export…', click() { console.log('Export…'); } }
       ]
     },
@@ -181,7 +189,9 @@ function createMenu() {
     {
       label: 'Settings',
       submenu: [
-        { label: 'Configure Hotkeys…', click() { createHotkeysWindow();  } },
+        { label: 'Configure Hotkeys…',
+          accelerator: 'CmdOrCtrl+H',
+          click() { createHotkeysWindow();  } },
         { label: 'Configure Preferences…', click() { console.log('Configure Preferences…'); } }
       ]
     },
