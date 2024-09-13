@@ -1,12 +1,10 @@
 
 import ToolbarButton from './ToolbarButton';
-import { useState } from 'react';
-import useModeStore from '../stores/useModeStore'
+import useToolbarStore from '../stores/useToolbarStore.js'
 import Draggable from 'react-draggable';
 
 const Toolbar = () => {
-  const { setMode } = useModeStore();
-  const [activeButton, setActiveButton] = useState('button4');
+  const {setMode ,activeButton, setActiveButton} = useToolbarStore();
   const handleButtonClick = (newMode) => {
     setMode(newMode);
     console.log(newMode)

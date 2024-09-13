@@ -2,9 +2,11 @@ import {create} from 'zustand';
 //import { persist } from 'zustand/middleware'
 
 
-const useModeStore = create((set) => ({
+const useToolbarStore = create((set) => ({
     mode: 'dragging', // initial state
+    activeButton: 'button4',
     setMode: (newMode) => set({ mode: newMode }), // function to update state
+    setActiveButton: (activeButton) => set({ activeButton: activeButton }),
   })
 );
   /*
@@ -21,4 +23,4 @@ const useModeStore = create((set) => ({
 );
 */
 
-export default useModeStore;
+export default useToolbarStore;

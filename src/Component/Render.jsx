@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import useModeStore from '../stores/useModeStore';
+import useToolbarStore from '../stores/useToolbarStore.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { 
@@ -14,7 +14,7 @@ import {
 import { GUI } from 'lil-gui';
 
 const Render = ({file}) => {
-  const { mode } = useModeStore();
+  const { mode } = useToolbarStore();
   useEffect(() => {
     init(); // 初始化 Three.js 场景
 
