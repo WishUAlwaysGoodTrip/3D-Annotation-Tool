@@ -10,6 +10,7 @@ import { useFileUploadStore } from './stores/useFileUploadStore.js'
 import { useRecentFiles } from './hooks/useRecentFiles';
 //import { useRecentFilesStore } from './stores/useRecentFilesStore.js'
 import { useIpcRenderer } from './hooks/useIpcRenderer';
+import AnnotationPanel from './Component/AnnotationPanel.jsx';
 
 const App = () => {
   const [listWidth, setListWidth] = useState(250); // 默认宽度，可调整
@@ -53,7 +54,9 @@ const App = () => {
         />
       )}
       <Toolbar />
+      
       <Render file={uploadedFile} />
+      <AnnotationPanel />
     </div>
   );
 };
