@@ -98,26 +98,28 @@ const AnnotationPanel = ({ onColorChange }) => {
     </option>
   ))}
 </select>
-
       </div>
-
       {showAddInput && (
-        <form onSubmit={handleAddAnnotation} >
-          <input
-            type="text"
-            value={newAnnotation}
-            onChange={(e) => setNewAnnotation(e.target.value)}
-            placeholder="Enter new annotation"
-            className="custom-input"
-          />
-          <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-          />
-          <button type="submit" className="custom-button">Add</button>
-        </form>
-      )}
+  <form onSubmit={handleAddAnnotation}>
+    <div className="form-row">
+      <input
+        type="text"
+        value={newAnnotation}
+        onChange={(e) => setNewAnnotation(e.target.value)}
+        placeholder="Enter new annotation"
+        className="custom-input"
+      />
+      <input
+        type="color"
+        value={newColor}
+        onChange={(e) => setNewColor(e.target.value)}
+        className="color1"
+      />
+    </div>
+    <button type="submit" className="submit-button">Yes</button>
+  </form>
+)}
+
 
       <button onClick={() => setShowAnnotationList(!showAnnotationList)}>
         {showAnnotationList ? 'Hide' : 'Edit'}

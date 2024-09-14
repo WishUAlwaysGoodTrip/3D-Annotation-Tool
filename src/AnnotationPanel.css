@@ -24,27 +24,28 @@
 
 .dropdown select {
   width: 100%;
-  padding: 5px; /* 增加内边距以确保文字和边框之间有适当间距 */
-  background-color: #676767; /* 初始背景颜色 */
+  padding: 5px;
+  background-color: #676767;
   font-family: "Roboto Medium", "Roboto", sans-serif;
-  color: white; /* 文字颜色 */
-  font-size: 13px; /* 字体大小 */
+  color: white;
+  font-size: 13px;
   border: none;
   border-radius: 5px;
-  transition: background-color 0.2 ease; /* 过渡效果，颜色变换时更流畅 */
+  transition: background-color 0.2s ease;
 }
 
 /* 当鼠标悬停在选择框上时的颜色变化 */
 .dropdown select:hover {
-  background-color: #777777; /* 鼠标悬停时的背景颜色 */
+  background-color: #777777;
 }
 
 .tooth-list {
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  max-height: 300px; /* 设置最大高度，超过后会出现滚动条 */
-  overflow-y: auto; /* 当内容溢出时，启用垂直滚动条 */
-  padding-right: 10px; /* 给滚动条预留空间 */
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .tooth-item {
@@ -52,8 +53,8 @@
   height: 16px;
   background-color: rgba(255, 255, 255, 0);
   font-family: "Arial Bold", "Arial", sans-serif;
-  box-sizing: border-box; 
-  font-weight: 700; 
+  box-sizing: border-box;
+  font-weight: 700;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -63,7 +64,7 @@
 }
 
 .tooth-item span {
-  color: #989797; /* 控制文字颜色 */
+  color: #989797;
 }
 
 .circle {
@@ -72,8 +73,6 @@
   border-radius: 50%;
   margin-right: 65px;
 }
-
-
 
 .annotation-item {
   display: flex;
@@ -84,25 +83,25 @@
   margin: 0;
 }
 
-
 .annotation-item input[type="color"] {
-  appearance: none; /* 去掉默认样式 */
-  width: 15px; /* 设置宽度 */
-  height: 15px; /* 设置高度，和宽度一致，形成圆形 */
-  border-radius: 50%; /* 使其成为圆形 */
-  border: none; /* 移除边框 */
-  padding: 0; /* 确保没有内边距 */
-  cursor: pointer; /* 鼠标悬停时显示手指指针 */
-  overflow: hidden; /* 确保没有多余内容溢出 */
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .annotation-item input[type="color"]::-webkit-color-swatch {
-  border: none; /* 移除颜色样本的默认边框 */
+  border: none;
 }
 
 .annotation-item input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0; /* 移除内边距 */
+  padding: 0;
 }
+
 
 .remove-button {
   background-color: red;
@@ -116,42 +115,33 @@
 .remove-button:hover {
   background-color: darkred;
 }
+
 .custom-input {
-  background-color: #676767; /* 修改输入框背景色 */
-  color: #fff; /* 修改输入框文字颜色 */
-  border: 1px solid #555; /* 修改边框颜色 */
-  padding: 5px; /* 内边距 */
-  border-radius: 5px; /* 添加圆角 */
+  background-color: #676767;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px;
+  border-radius: 5px;
 }
 
 .custom-input::placeholder {
-  color: #bfbfbf; /* 修改占位符文字颜色 */
-}
-.custom-button {
-  background-color: #786969; /* 初始背景色，使用绿色可以让按钮更明显 */
-  color: white; /* 按钮文字颜色 */
-  border: none; /* 移除默认边框 */
-  padding: 5px 5px; /* 调整按钮的内边距 */
-  border-radius: 8px; /* 添加圆角 */
-  cursor: pointer; /* 鼠标指针 */
-  font-size: 14px; /* 调整字体大小 */
-  transition: background-color 0.3s, transform 0.2s ease; /* 平滑的背景色变化和点击时的缩放效果 */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 添加按钮阴影，使其有立体效果 */
+  color: #bfbfbf;
 }
 
-.custom-button:hover {
-  background-color: #777777; /* 鼠标悬停时改变背景色 */
+
+
+.submit-button:hover {
+  background-color: #777777;
 }
 
-.custom-button:active {
-  transform: scale(0.98); /* 点击时按钮稍微缩小，产生按压效果 */
-  background-color: #9d9e9d; /* 点击时改变按钮背景色 */
+.submit-button:active {
+  transform: scale(0.98);
+  background-color: #9d9e9d;
 }
-
 
 .annotation-item span {
   display: inline-block;
-  max-width: 80px; /* Adjust this value to your desired width */
+  max-width: 80px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -159,5 +149,97 @@
 }
 
 .annotation-item input[type="text"] {
-  max-width: 80px; /* Adjust this value to your desired width */
+  max-width: 80px;
+}
+/* 父容器设置为 text-align 居中 */
+form {
+  text-align: center;
+}
+
+
+/* 父容器设置为 flex 布局，水平排列 input 和颜色选择器 */
+.form-row {
+  display: flex;
+  align-items: center; /* 垂直居中对齐 */
+  margin-bottom: 10px; /* 给下方留出间隙 */
+}
+
+.custom-input {
+  background-color: #676767;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px;
+  border-radius: 5px;
+  margin-right: 10px; /* 给颜色选择器留出间隙 */
+  width: 150px; /* 控制输入框的宽度 */
+}
+
+.color1 {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* 确保内部的颜色样式也被正确应用 */
+.color1::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.color1::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.submit-button {
+  background-color: #717070;
+  color: rgb(255, 255, 255);
+  height: 20px;
+  min-width: 80px;
+  border: none;
+  padding: 2px 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  transition: background-color 0.3s, transform 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:hover {
+  background-color: #c4c4c4;
+}
+
+.submit-button:active {
+  transform: scale(0.98);
+  background-color: #919191;
+}
+.edit-button {
+  background-color: #4CAF50; /* 设置背景颜色 */
+  color: white; /* 设置文字颜色 */
+  height: 30px; /* 调整高度 */
+  min-width: 60px; /* 最小宽度 */
+  border: none; /* 移除边框 */
+  padding: 5px 10px; /* 内边距 */
+  border-radius: 5px; /* 圆角 */
+  cursor: pointer; /* 鼠标指针 */
+  font-size: 14px; /* 字体大小 */
+  text-align: center; /* 文字居中 */
+  transition: background-color 0.3s, transform 0.2s ease; /* 添加过渡效果 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 按钮阴影效果 */
+}
+
+.edit-button:hover {
+  background-color: #45a049; /* 悬停时改变背景色 */
+}
+
+.edit-button:active {
+  transform: scale(0.98); /* 点击时缩小效果 */
+  background-color: #3e8e41; /* 点击时改变背景色 */
 }
