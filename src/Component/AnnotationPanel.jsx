@@ -121,9 +121,12 @@ const AnnotationPanel = ({ onColorChange }) => {
 )}
 
 
-      <button onClick={() => setShowAnnotationList(!showAnnotationList)}>
-        {showAnnotationList ? 'Hide' : 'Edit'}
+    {!showAddInput && (
+      <button className="edit-button" onClick={() => setShowAnnotationList(!showAnnotationList)}>
+          {showAnnotationList ? 'Hide' : 'Edit'}
       </button>
+    )}
+
      {/* Display list of annotations with a remove button */}
      {showAnnotationList && (
   <ul className="annotation-list">

@@ -80,6 +80,7 @@
   align-items: center;
   padding: 4px 0;
   text-align: left;
+  font-size: 13px;
   margin: 0;
 }
 
@@ -104,12 +105,13 @@
 
 
 .remove-button {
-  background-color: red;
+  background-color: rgb(198, 4, 4);
   color: white;
   border: none;
-  padding: 3px 5px;
+  padding: 3px 3px;
   cursor: pointer;
   border-radius: 3px;
+  font-size: 12px;
 }
 
 .remove-button:hover {
@@ -221,25 +223,25 @@ form {
   background-color: #919191;
 }
 .edit-button {
-  background-color: #4CAF50; /* 设置背景颜色 */
-  color: white; /* 设置文字颜色 */
-  height: 30px; /* 调整高度 */
-  min-width: 60px; /* 最小宽度 */
-  border: none; /* 移除边框 */
-  padding: 5px 10px; /* 内边距 */
-  border-radius: 5px; /* 圆角 */
-  cursor: pointer; /* 鼠标指针 */
-  font-size: 14px; /* 字体大小 */
-  text-align: center; /* 文字居中 */
-  transition: background-color 0.3s, transform 0.2s ease; /* 添加过渡效果 */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 按钮阴影效果 */
+  background-color: #717070;
+  color: rgb(255, 255, 255); 
+  height: 20px; 
+  min-width: 60px;
+  border: none; 
+  padding: 2px 5px;
+  border-radius: 5px; 
+  cursor: pointer; 
+  font-size: 12px; 
+  text-align: center;
+  transition: background-color 0.3s, transform 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
 }
 
 .edit-button:hover {
-  background-color: #45a049; /* 悬停时改变背景色 */
+  background-color: #c4c4c4; 
 }
 
 .edit-button:active {
-  transform: scale(0.98); /* 点击时缩小效果 */
-  background-color: #3e8e41; /* 点击时改变背景色 */
+  transform: scale(0.98);
+  background-color: #919191; 
 }
