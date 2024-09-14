@@ -42,7 +42,7 @@
 .tooth-list {
   display: flex;
   flex-direction: column;
-  max-height: 200px; /* 设置最大高度，超过后会出现滚动条 */
+  max-height: 300px; /* 设置最大高度，超过后会出现滚动条 */
   overflow-y: auto; /* 当内容溢出时，启用垂直滚动条 */
   padding-right: 10px; /* 给滚动条预留空间 */
 }
@@ -74,11 +74,34 @@
 }
 
 
+
 .annotation-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 0;
+  padding: 4px 0;
+  text-align: left;
+  margin: 0;
+}
+
+
+.annotation-item input[type="color"] {
+  appearance: none; /* 去掉默认样式 */
+  width: 15px; /* 设置宽度 */
+  height: 15px; /* 设置高度，和宽度一致，形成圆形 */
+  border-radius: 50%; /* 使其成为圆形 */
+  border: none; /* 移除边框 */
+  padding: 0; /* 确保没有内边距 */
+  cursor: pointer; /* 鼠标悬停时显示手指指针 */
+  overflow: hidden; /* 确保没有多余内容溢出 */
+}
+
+.annotation-item input[type="color"]::-webkit-color-swatch {
+  border: none; /* 移除颜色样本的默认边框 */
+}
+
+.annotation-item input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0; /* 移除内边距 */
 }
 
 .remove-button {
@@ -126,3 +149,15 @@
 }
 
 
+.annotation-item span {
+  display: inline-block;
+  max-width: 80px; /* Adjust this value to your desired width */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.annotation-item input[type="text"] {
+  max-width: 80px; /* Adjust this value to your desired width */
+}

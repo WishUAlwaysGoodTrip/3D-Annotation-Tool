@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the styles
 
-const AnnotationPanel = () => {
+const AnnotationPanel = ({ onColorChange }) => {
   const [annotations, setAnnotations] = useState([
-    'HEALTHY',
-    'UNHEALTHY', 
-    'ADD...'
+    { name: 'ADD...', color: '#ffffff' }
   ]);
   const [newAnnotation, setNewAnnotation] = useState('');
   const [newColor, setNewColor] = useState('#ffffff');
@@ -16,7 +14,15 @@ const AnnotationPanel = () => {
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
 
+  useEffect(() => {
+    if (annotations.length === 1 && annotations[0].name === 'ADD...') {
+      setShowAddInput(true);
+    }
+  }, [annotations]);
+
   const handleAnnotationChange = (e) => {
+    const selected = e.target.value;
+    setSelectedAnnotation(annotations.find(annotation => annotation.name === selected));
     if (e.target.value === 'ADD...') {
       setShowAddInput(true);
     } else{
@@ -27,45 +33,48 @@ const AnnotationPanel = () => {
   const handleAddAnnotation = (e) => {
     e.preventDefault();
     if (newAnnotation.trim() !== '') {
-      setAnnotations([...annotations.slice(0, annotations.length - 1), newAnnotation, 'ADD...']);
+      const newAnnotationObj = { name: newAnnotation, color: newColor };
+      setAnnotations([...annotations.slice(0, annotations.length - 1), newAnnotationObj, { name: 'ADD...', color: '#ffffff' }]);
       setNewAnnotation('');
       setNewColor('#ffffff');
       setShowAddInput(false);
     }
   };
+  
 
   const handleRemoveAnnotation = (annotationToRemove) => {
-      setAnnotations(annotations.filter(annotation => annotation !== annotationToRemove));
+    setAnnotations(annotations.filter(annotation => annotation.name !== annotationToRemove.name));
+    setSelectedAnnotation(null); // 取消当前选择的注释
   };
+  
     // 开始编辑注释
   const handleDoubleClick = (index, annotation) => {
     setEditingIndex(index); // 设置正在编辑的注释索引
     setEditedAnnotation(annotation); // 设置要编辑的注释
   };
-
-    // 保存编辑后的注释
   const handleEditSave = (index) => {
     const updatedAnnotations = [...annotations];
-    updatedAnnotations[index] = editedAnnotation;
+    // 保持颜色不变，同时更新注释名称
+    updatedAnnotations[index] = { name: editedAnnotation, color: updatedAnnotations[index].color };
     setAnnotations(updatedAnnotations);
     setEditingIndex(null); // 完成编辑，重置编辑状态
   };
-
+  
   const teeth = [
     { id: 1, color: '#ffffff' }, // White
-    { id: 2, color: '#0000ff' }, // Blue
-    { id: 3, color: '#555555' },
-    { id: 4, color: '#63a103' }, 
-    { id: 5, color: '#800080' }, 
-    { id: 6, color: '#63a103' }, 
-    { id: 7, color: '#0000ff' }, // Blue
-    { id: 8, color: '#555555' }, 
-    { id: 9, color: '#63a103' }, 
-    { id: 10, color: '#800080' }, // Purple
-    { id: 11, color: '#555555' },
-    { id: 12, color: '#0000ff' }, // Blue
+    { id: 2, color: '#ffffff' }, // Blue
+    { id: 3, color: '#ffffff' },
+    { id: 4, color: '#ffffff' }, 
+    { id: 5, color: '#ffffff' }, 
+    { id: 6, color: '#ffffff' }, 
+    { id: 7, color: '#ffffff' }, // Blue
+    { id: 8, color: '#ffffff' }, 
+    { id: 9, color: '#ffffff' }, 
+    { id: 10, color: '#ffffff' }, // Purple
+    { id: 11, color: '#ffffff' },
+    { id: 12, color: '#ffffff' }, // Blue
     { id: 13, color: '#ffffff' }, // White
-    { id: 14, color: '#63a103' }, 
+    { id: 14, color: '#ffffff' }, 
     { id: 15, color: '#800080' }, // Purple
     { id: 16, color: '#555555' }  
   ];
@@ -83,12 +92,13 @@ const AnnotationPanel = () => {
       <div className="dropdown">
         <label htmlFor="annotation-list">Annotation List</label>
         <select id="annotation-list" onChange={handleAnnotationChange}>
-          {annotations.map((annotation, index) => (
-            <option key={index} value={annotation.name}>
-              {annotation}
-            </option>
-          ))}
-        </select>
+  {annotations.map((annotation, index) => (
+    <option key={index} value={annotation.name}>
+      {annotation.name}
+    </option>
+  ))}
+</select>
+
       </div>
 
       {showAddInput && (
@@ -110,44 +120,48 @@ const AnnotationPanel = () => {
       )}
 
       <button onClick={() => setShowAnnotationList(!showAnnotationList)}>
-        {showAnnotationList ? 'Hide' : '🖊'}
+        {showAnnotationList ? 'Hide' : 'Edit'}
       </button>
      {/* Display list of annotations with a remove button */}
      {showAnnotationList && (
   <ul className="annotation-list">
-    {annotations.slice(0, annotations.length - 1).map((annotation, index) => (
-      <li key={index} className="annotation-item">
-        {/* 双击进入编辑模式 */}
-        {editingIndex === index ? (
-          <input
-            type="text"
-            value={editedAnnotation}
-            onChange={(e) => setEditedAnnotation(e.target.value)}
-            onBlur={() => handleEditSave(index)} // 失去焦点时保存
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleEditSave(index); // 按下Enter时保存
-            }}
-          />
-        ) : (
-          <span onDoubleClick={() => handleDoubleClick(index, annotation)}>
-            {annotation}
-          </span>
-        )}
-        <button
-          className="remove-button"
-          onClick={() => handleRemoveAnnotation(annotation)}
-        >
-          Remove
-        </button>
+  {annotations.slice(0, annotations.length - 1).map((annotation, index) => (
+    <li key={index} className="annotation-item">
+      {editingIndex === index ? (
+        <input
+          type="text"
+          value={editedAnnotation}
+          onChange={(e) => setEditedAnnotation(e.target.value)}
+          onBlur={() => handleEditSave(index)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleEditSave(index);
+          }}
+        />
+      ) : (
+        <span 
+        className="truncate-text"
+        title={annotation.name} 
+        onDoubleClick={() => handleDoubleClick(index, annotation.name)}>
+          {annotation.name}
+        </span>
+      )}
+      <input
+        type="color"
+        value={annotation.color}
+        onChange={(e) => {
+          const updatedAnnotations = [...annotations];
+          updatedAnnotations[index].color = e.target.value;
+          setAnnotations(updatedAnnotations);
+        }}
+      />
+      <button className="remove-button" onClick={() => handleRemoveAnnotation(annotation)}>
+      Remove
+      </button>
 
-                  <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-          />
-      </li>
-    ))}
-  </ul>
+    </li>
+  ))}
+</ul>
+
 )}
 
     
@@ -164,3 +178,5 @@ const AnnotationPanel = () => {
 };
 
 export default AnnotationPanel;
+
+

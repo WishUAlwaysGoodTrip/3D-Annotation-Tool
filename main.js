@@ -128,9 +128,15 @@ function createMenu() {
                 });
               } else {
                 dialog.showMessageBox({
-                  type: 'warning',  // 设置为警告框
+                  type: 'warning',
                   title: 'No STL Files Found',
-                  message: 'No STL files were found. Please select a folder with STL files.'
+                  message: 'No STL files were found. Please select a folder with STL files.',
+                  buttons: ['OK'],
+                  defaultId: 0,
+                  modal: true,
+                  parent: win,
+                }).then(() => {
+                  console.log('No STL files dialog was closed');
                 });
               }
             }
