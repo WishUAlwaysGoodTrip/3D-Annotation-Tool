@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { useDrawingStore } from '../stores/DrawingStore';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import useToolbarStore from '../stores/useToolbarStore.js';
 import * as THREE from 'three';
@@ -13,8 +14,12 @@ import {
 } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
-const Render = ({file}) => {
+
+const Render = ({ file }) => {
   const { mode } = useToolbarStore();
+  const undoOperation = useDrawingStore((state) => state.undoOperation);
+  const redoOperation = useDrawingStore((state) => state.redoOperation);
+  const addOperation = useDrawingStore((state) => state.addOperation);
   useEffect(() => {
     init(); // 初始化 Three.js 场景
 
@@ -27,21 +32,80 @@ const Render = ({file}) => {
     };
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     threeMode = mode;
-    console.log("render mode change")
+    console.log("Render mode change");
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
   }, [mode]);
-   // 仅在 incomingMode 变化时运行
 
-     // 监听 file 的变化并加载 STL 模型
   useEffect(() => {
     if (file) {
       loadModel(file); // 加载传入的 STL 文件
     }
-  }, [file]); // 当 file 变化时调用
-  return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
+  }, [file]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        console.log('Undo triggered');
+        undoOperation();
+      } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+        console.log('Redo triggered');
+        redoOperation();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [undoOperation, redoOperation]);
+
+  useEffect(() => {
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+    };
+  }, [mode, addOperation]);
+
+  const handlePointerMove = (e) => {
+    if (!targetMesh) return; // 确保 targetMesh 已被定义
+  
+    if (threeMode === 'painting' || threeMode === 'erasing') {
+      const mouse = new THREE.Vector2();
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+  
+      const intersects = raycaster.intersectObject(targetMesh, true);
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        cursorCircle.position.copy(intersect.point);
+        document.body.style.cursor = 'none';
+  
+        if (isPainting) {
+          if (threeMode === 'painting') {
+            paintIntersectedArea(intersect, addOperation); // 直接调用 addOperation
+          } else if (threeMode === 'erasing') {
+            eraseIntersectedArea(intersect, addOperation); // 直接调用 addOperation
+          }
+        }
+      } else {
+        cursorCircle.position.set(10000, 10000, 10000);
+        document.body.style.cursor = 'default';
+      }
+  
+      updateCursorCircleOrientation();
+    }
+  };
+  
+  
+
+  return null;
 };
 
 // 将 BVH 加速结构的算法方法绑定到 Three.js
@@ -56,6 +120,7 @@ let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
 let threeMode = 'dragging'; // 默认模式为拖拽
 let gui; // 全局 GUI 变量
+
 
 // 初始化场景和 Three.js 渲染器
 function init() {
@@ -198,7 +263,8 @@ function updateCursorCircleOrientation() {
 
 // 鼠标移动事件处理
 function onPointerMove(e) {
-  // 判断当前模式是绘画还是橡皮擦
+  if (!targetMesh) return; // 确保 targetMesh 已被定义
+
   if (threeMode === 'painting' || threeMode === 'erasing') {
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -211,15 +277,15 @@ function onPointerMove(e) {
     if (intersects.length > 0) {
       const intersect = intersects[0];
       cursorCircle.position.copy(intersect.point);
-          // 隐藏光标
       document.body.style.cursor = 'none';
 
       if (isPainting) {
-        // 新增判断：根据模式决定绘制或擦除
         if (threeMode === 'painting') {
-          paintIntersectedArea(intersect); // 继续调用绘制函数
+          // 确保传入 addOperation
+          paintIntersectedArea(intersect, addOperation);
         } else if (threeMode === 'erasing') {
-          eraseIntersectedArea(intersect); // 调用擦除函数
+          // 确保传入 addOperation
+          eraseIntersectedArea(intersect, addOperation);
         }
       }
     } else {
@@ -250,75 +316,18 @@ function onPointerUp(e) {
 // 绘制选定区域
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
-function paintIntersectedArea(intersect) {
+function paintIntersectedArea(intersect, addOperation) {
   const indices = [];
   const tempVec = new THREE.Vector3();
 
   const inverseMatrix = new THREE.Matrix4();
   inverseMatrix.copy(targetMesh.matrixWorld).invert();
 
-  const circleRadius = cursorCircle.scale.x * 5; // 使用指示器的缩放比例调整绘制半径
-  const sphere = new THREE.Sphere();
-  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
-  sphere.radius = circleRadius;
-
-  targetMesh.geometry.boundsTree.shapecast({
-    intersectsBounds: (box) => {
-      const intersects = sphere.intersectsBox(box);
-      if (intersects) {
-        const { min, max } = box;
-        for (let x = 0; x <= 1; x++) {
-          for (let y = 0; y <= 1; y++) {
-            for (let z = 0; z <= 1; z++) {
-              tempVec.set(
-                x === 0 ? min.x : max.x,
-                y === 0 ? min.y : max.y,
-                z === 0 ? min.z : max.z
-              );
-              if (!sphere.containsPoint(tempVec)) {
-                return INTERSECTED;
-              }
-            }
-          }
-          return CONTAINED;
-        }
-      }
-      return intersects ? INTERSECTED : NOT_INTERSECTED;
-    },
-    intersectsTriangle: (tri, i, contained) => {
-      if (contained || tri.intersectsSphere(sphere)) {
-        const i3 = 3 * i;
-        indices.push(i3, i3 + 1, i3 + 2);
-      }
-      return false;
-    }
-  });
-  const colorAttr = targetMesh.geometry.getAttribute('color');
-  for (let i = 0, l = indices.length; i < l; i++) {
-    const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-  }
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
-}
-
-
-
-// 擦除选定区域，恢复为物体的原始颜色
-function eraseIntersectedArea(intersect) {
-  const indices = [];
-  const tempVec = new THREE.Vector3();
-
-  // 获取目标物体的逆矩阵
-  const inverseMatrix = new THREE.Matrix4();
-  inverseMatrix.copy(targetMesh.matrixWorld).invert();
-
-  // 使用指示器的缩放比例调整擦除半径
   const circleRadius = cursorCircle.scale.x * 5;
   const sphere = new THREE.Sphere();
   sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
   sphere.radius = circleRadius;
 
-  // 使用 BVH 树进行空间查询
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
       const intersects = sphere.intersectsBox(box);
@@ -351,11 +360,70 @@ function eraseIntersectedArea(intersect) {
     }
   });
 
-  // 获取几何体的颜色属性和保存的原始颜色
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  for (let i = 0, l = indices.length; i < l; i++) {
+    const index = targetMesh.geometry.index.getX(indices[i]);
+    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+  }
+  colorAttr.needsUpdate = true;
+
+  // 正确调用 addOperation
+  addOperation({
+    type: 'painting',
+    indices,
+    color: paintColor.clone(),
+  });
+}
+
+
+function eraseIntersectedArea(intersect, addOperation) {
+  const indices = [];
+  const tempVec = new THREE.Vector3();
+
+  const inverseMatrix = new THREE.Matrix4();
+  inverseMatrix.copy(targetMesh.matrixWorld).invert();
+
+  const circleRadius = cursorCircle.scale.x * 5; // Adjust erasing radius with the cursor scale
+  const sphere = new THREE.Sphere();
+  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
+  sphere.radius = circleRadius;
+
+  // Determine intersected area
+  targetMesh.geometry.boundsTree.shapecast({
+    intersectsBounds: (box) => {
+      const intersects = sphere.intersectsBox(box);
+      if (intersects) {
+        const { min, max } = box;
+        for (let x = 0; x <= 1; x++) {
+          for (let y = 0; y <= 1; y++) {
+            for (let z = 0; z <= 1; z++) {
+              tempVec.set(
+                x === 0 ? min.x : max.x,
+                y === 0 ? min.y : max.y,
+                z === 0 ? min.z : max.z
+              );
+              if (!sphere.containsPoint(tempVec)) {
+                return INTERSECTED;
+              }
+            }
+          }
+          return CONTAINED;
+        }
+      }
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
+    },
+    intersectsTriangle: (tri, i, contained) => {
+      if (contained || tri.intersectsSphere(sphere)) {
+        const i3 = 3 * i;
+        indices.push(i3, i3 + 1, i3 + 2);
+      }
+      return false;
+    }
+  });
+
+  // Update the color of the intersected area to its original color
   const colorAttr = targetMesh.geometry.getAttribute('color');
   const originalColors = targetMesh.geometry.userData.originalColors;
-
-  // 恢复原始颜色
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(
@@ -365,7 +433,13 @@ function eraseIntersectedArea(intersect) {
       originalColors[index * 3 + 2]
     );
   }
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  colorAttr.needsUpdate = true; // Notify Three.js to update the color
+
+  // Record the erasing operation
+  addOperation({
+    type: 'erasing',
+    indices,
+  });
 }
 
 function addGUI() {
@@ -432,19 +506,18 @@ function updateControls() {
 
 // 更新事件监听器
 function updateEventListeners() {
+  // 确保先移除现有监听器
+  window.removeEventListener('pointermove', onPointerMove, false);
+  window.removeEventListener('pointerdown', onPointerDown, false);
+  window.removeEventListener('pointerup', onPointerUp, false);
+
   if (threeMode === 'painting' || threeMode === 'erasing') {
-    // 在绘画和擦除模式下都添加事件监听器
+    // 在绘画和擦除模式下重新添加事件监听器
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
     console.log(`render ${threeMode}`); // 输出当前模式
-
   } else {
-    // 在其他模式下移除事件监听器
-    window.removeEventListener('pointermove', onPointerMove, false);
-    window.removeEventListener('pointerdown', onPointerDown, false);
-    window.removeEventListener('pointerup', onPointerUp, false);
-
     // 恢复默认光标
     document.body.style.cursor = 'default';
   }

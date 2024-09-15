@@ -65,6 +65,20 @@ function createHotkeysWindow() {
   });
 }
 
+// ipcMain.on('export-annotations', (event, annotations) => {
+//   dialog.showSaveDialog({
+//     title: 'Save Annotations',
+//     defaultPath: 'annotations.json',
+//     filters: [{ name: 'JSON Files', extensions: ['json'] }]
+//   }).then(result => {
+//     if (!result.canceled) {
+//       fs.writeFileSync(result.filePath, JSON.stringify(annotations, null, 2), 'utf-8');
+//       console.log('Annotations saved to:', result.filePath);
+//     }
+//   }).catch(err => {
+//     console.log('Error saving annotations:', err);
+//   });
+// });
 
 // 创建自定义菜单
 function createMenu() {
@@ -136,8 +150,7 @@ function createMenu() {
                   modal: true,
                   parent: win,
                 }).then(() => {
-                  console.log('No STL files dialog was closed');
-                });
+                  console.log('No STL files dialog was closed');                });
               }
             }
           }).catch(err => {
@@ -172,19 +185,26 @@ function createMenu() {
               console.log('Error:', err);
             });}
         },
-        { label: 'Save', accelerator: 'CmdOrCtrl+S', click() { console.log('Save'); } },
+        { label: 'Save', 
+          accelerator: 'CmdOrCtrl+S', 
+          click() { 
+            win.webContents.send('request-save-annotations'); // 向渲染进程发送保存请求
+          }  },
         { label: 'Save As…', click() { console.log('Save As…'); } },
         { label: 'Open Recent', 
           accelerator: 'CmdOrCtrl+E', 
           click() { win.webContents.send('open-recent'); } },
-        { label: 'Export…', click() { console.log('Export…'); } }
+        { label: 'Export', 
+          click() { 
+            win.webContents.send('request-export-annotations'); // 向渲染进程发送导出请求
+          }  }
       ]
     },
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        { role: 'undo', click: () => win.webContents.send('undo') },
+        { role: 'redo', click: () => win.webContents.send('redo') },
         { type: 'separator' },
         { role: 'cut' },
         { role: 'copy' },
