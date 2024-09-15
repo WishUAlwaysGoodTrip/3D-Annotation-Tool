@@ -22,13 +22,18 @@ const AnnotationPanel = ({ onColorChange }) => {
 
   const handleAnnotationChange = (e) => {
     const selected = e.target.value;
-    setSelectedAnnotation(annotations.find(annotation => annotation.name === selected));
+    const selectedAnn = annotations.find(annotation => annotation.name === selected);
+    setSelectedAnnotation(selectedAnn);
     if (e.target.value === 'ADD...') {
       setShowAddInput(true);
-    } else{
-      setShowAddInput(false)
+    } else {
+      setShowAddInput(false);
+    }
+    if (selectedAnn) {
+      onColorChange(selectedAnn.color);
     }
   };
+  
 
   const handleAddAnnotation = (e) => {
     e.preventDefault();
@@ -38,6 +43,8 @@ const AnnotationPanel = ({ onColorChange }) => {
       setNewAnnotation('');
       setNewColor('#ffffff');
       setShowAddInput(false);
+      setSelectedAnnotation(newAnnotationObj);
+      onColorChange(newAnnotationObj.color); 
     }
   };
   
@@ -54,12 +61,15 @@ const AnnotationPanel = ({ onColorChange }) => {
   };
   const handleEditSave = (index) => {
     const updatedAnnotations = [...annotations];
-    // 保持颜色不变，同时更新注释名称
+    // 更新注释名称和保持颜色不变
     updatedAnnotations[index] = { name: editedAnnotation, color: updatedAnnotations[index].color };
     setAnnotations(updatedAnnotations);
     setEditingIndex(null); // 完成编辑，重置编辑状态
+
+    // 更新颜色为编辑后的注释颜色
+    onColorChange(updatedAnnotations[index].color);
+    setSelectedAnnotation(updatedAnnotations[index]);
   };
-  
   const teeth = [
     { id: 1, color: '#ffffff' }, // White
     { id: 2, color: '#ffffff' }, // Blue

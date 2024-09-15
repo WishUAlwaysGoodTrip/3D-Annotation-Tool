@@ -14,6 +14,7 @@ import AnnotationPanel from './Component/AnnotationPanel.jsx';
 
 const App = () => {
   const [listWidth, setListWidth] = useState(250); // 默认宽度，可调整
+  const [selectedColor, setSelectedColor] = useState('#ffffff'); // 新增: 用于保存从 AnnotationPanel 选择的颜色
   // const [showFileList, setShowFileList] = useState(false); // 控制显示文件列表
 
   //const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUpload();
@@ -30,7 +31,10 @@ const App = () => {
   const handleFileSelect = (file) => {
     setUploadedFile(file);  // 只设置当前激活的文件
   };
-
+  // 新增: 当 AnnotationPanel 选择颜色时，更新 App 组件的颜色状态
+  const handleColorChange = (color) => {
+    setSelectedColor(color); // 保存选择的颜色
+  };
   return (
     <div className="app">
       <header className="app-header">
@@ -55,8 +59,8 @@ const App = () => {
       )}
       <Toolbar />
       
-      <Render file={uploadedFile} />
-      <AnnotationPanel />
+      <Render file={uploadedFile} brushColor={selectedColor} />
+      <AnnotationPanel onColorChange={handleColorChange} />
     </div>
   );
 };

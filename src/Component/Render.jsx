@@ -13,7 +13,7 @@ import {
 } from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 
-const Render = ({file}) => {
+const Render = ({file, brushColor}) => {
   const { mode } = useToolbarStore();
   useEffect(() => {
     init(); // 初始化 Three.js 场景
@@ -41,6 +41,12 @@ const Render = ({file}) => {
       loadModel(file); // 加载传入的 STL 文件
     }
   }, [file]); // 当 file 变化时调用
+
+  useEffect(() => {
+    if (brushColor) {
+      updatePaintColor(brushColor);  // 当 brushColor 改变时更新 paintColor
+    }
+  }, [brushColor]);  // 当 brushColor 变化时调用
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
 
@@ -116,7 +122,6 @@ function init() {
   // 添加事件监听器
   updateEventListeners();
 }
-
 
 // 加载 STL 模型
 function loadModel(file) {
@@ -296,11 +301,19 @@ function paintIntersectedArea(intersect) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+    colorAttr.setXYZ(index, paintColor.r , paintColor.g , paintColor.b );
   }
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
-
+// 更新绘制颜色
+function updatePaintColor(color) {
+  // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
+  if (typeof color === 'string') {
+    paintColor.set(color); // 使用传入的颜色更新 paintColor
+  } else {
+    paintColor = new THREE.Color(color); // 直接使用传入的 RGB 数组或其他格式
+  }
+}
 
 
 // 擦除选定区域，恢复为物体的原始颜色
