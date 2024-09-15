@@ -380,8 +380,6 @@ function updatePaintColor(color) {
   }
 }
 
-
-// 擦除选定区域，恢复为物体的原始颜色
 function eraseIntersectedArea(intersect) {
   const indices = [];
   const tempVec = new THREE.Vector3();
@@ -442,9 +440,15 @@ function eraseIntersectedArea(intersect) {
       originalColors[index * 3 + 1],
       originalColors[index * 3 + 2]
     );
+
+    // 删除记录中的已擦除部分
+    if (annotationColors[anotationlistname]) {
+      annotationColors[anotationlistname].delete(index);
+    }
   }
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
+
 
 
 function addGUI() {
@@ -477,7 +481,7 @@ function addGUI() {
     .onChange((value) => {
       cursorCircle.scale.set(value / 5, value / 5, value / 5);
     });
-  cursorFolder.open(); // 确保 "Cursor Circle" 文件夹默认展开
+  cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开
 
   // const renderFolder = gui.addFolder('Render Color');
   // renderFolder
