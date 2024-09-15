@@ -3,53 +3,8 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import useToolbarStore from '../stores/useToolbarStore.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { 
-  acceleratedRaycast, 
-  computeBoundsTree, 
-  disposeBoundsTree, 
-  CONTAINED, 
-  INTERSECTED, 
-  NOT_INTERSECTED 
-} from 'three-mesh-bvh';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED} from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
-
-const Render = ({file, brushColor}) => {
-  const { mode } = useToolbarStore();
-  useEffect(() => {
-    init(); // 初始化 Three.js 场景
-
-    // 清除事件监听器和 Three.js 渲染器
-    return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointerup', onPointerUp);
-      if (renderer) document.body.removeChild(renderer.domElement);
-    };
-  }, []);
-
-  useEffect(() => { 
-    threeMode = mode;
-    console.log("render mode change")
-    updateControls(); // 根据新的 mode 更新控制
-    updateEventListeners(); // 更新事件监听器
-  }, [mode]);
-   // 仅在 incomingMode 变化时运行
-
-     // 监听 file 的变化并加载 STL 模型
-  useEffect(() => {
-    if (file) {
-      loadModel(file); // 加载传入的 STL 文件
-    }
-  }, [file]); // 当 file 变化时调用
-
-  useEffect(() => {
-    if (brushColor) {
-      updatePaintColor(brushColor);  // 当 brushColor 改变时更新 paintColor
-    }
-  }, [brushColor]);  // 当 brushColor 变化时调用
-  return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
-};
-
 // 将 BVH 加速结构的算法方法绑定到 Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -62,6 +17,52 @@ let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
 let threeMode = 'dragging'; // 默认模式为拖拽
 let gui; // 全局 GUI 变量
+let annotationColors = {}; // 保存每个注释的颜色数据
+let anotationlistname
+const Render = ({file, brushColor, annotationName}) => {
+  const { mode } = useToolbarStore();
+  useEffect(() => {
+    init(); // 初始化 Three.js 场景
+    window.addEventListener('resize', onWindowResize);
+
+    // 清除事件监听器和 Three.js 渲染器
+    return () => {
+      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      if (renderer) document.body.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  useEffect(() => { 
+    threeMode = mode;
+    updateControls(); // 根据新的 mode 更新控制
+    updateEventListeners(); // 更新事件监听器
+  }, [mode]);
+
+     // 监听 file 的变化并加载 STL 模型
+  useEffect(() => {
+    if (file) {
+      loadModel(file); // 加载传入的 STL 文件
+    }
+  }, [file]); // 当 file 变化时调用
+
+  useEffect(() => {
+    if (brushColor) {
+      console.log("Brush Color Render:", brushColor); // 调试输出
+      updatePaintColor(brushColor); // 更新绘制颜色
+    }
+
+    if (annotationName) {
+      console.log("Annotation Name Render:", annotationName); // 调试输出
+      anotationlistname = annotationName;
+      restoreAnnotationColors(annotationName); // 恢复注释的颜色
+    }
+  }, [brushColor, annotationName]); // 当 brushColor 或 annotationName 变化时调用
+  
+  return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
+};
 
 // 初始化场景和 Three.js 渲染器
 function init() {
@@ -201,9 +202,20 @@ function updateCursorCircleOrientation() {
   cursorCircle.lookAt(camera.position.clone().add(cameraDirection));
 }
 
+// 窗口大小调整事件处理
+function onWindowResize() {
+  if (camera && renderer) {
+    // 更新相机的宽高比
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    // 更新渲染器大小
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+}
+
 // 鼠标移动事件处理
 function onPointerMove(e) {
-  // 判断当前模式是绘画还是橡皮擦
   if (threeMode === 'painting' || threeMode === 'erasing') {
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -212,24 +224,25 @@ function onPointerMove(e) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    const intersects = raycaster.intersectObject(targetMesh, true);
-    if (intersects.length > 0) {
-      const intersect = intersects[0];
-      cursorCircle.position.copy(intersect.point);
-          // 隐藏光标
-      document.body.style.cursor = 'none';
+    // 检查 targetMesh 是否已定义
+    if (targetMesh) {
+      const intersects = raycaster.intersectObject(targetMesh, true);
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        cursorCircle.position.copy(intersect.point);
+        document.body.style.cursor = 'none';
 
-      if (isPainting) {
-        // 新增判断：根据模式决定绘制或擦除
-        if (threeMode === 'painting') {
-          paintIntersectedArea(intersect); // 继续调用绘制函数
-        } else if (threeMode === 'erasing') {
-          eraseIntersectedArea(intersect); // 调用擦除函数
+        if (isPainting) {
+          if (threeMode === 'painting') {
+            paintIntersectedArea(intersect, anotationlistname);
+          } else if (threeMode === 'erasing') {
+            eraseIntersectedArea(intersect);
+          }
         }
+      } else {
+        cursorCircle.position.set(10000, 10000, 10000);
+        document.body.style.cursor = 'default';
       }
-    } else {
-      cursorCircle.position.set(10000, 10000, 10000);
-      document.body.style.cursor = 'default';
     }
 
     updateCursorCircleOrientation();
@@ -255,7 +268,8 @@ function onPointerUp(e) {
 // 绘制选定区域
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
-function paintIntersectedArea(intersect) {
+function paintIntersectedArea(intersect, annotationName) {
+
   const indices = [];
   const tempVec = new THREE.Vector3();
 
@@ -298,20 +312,71 @@ function paintIntersectedArea(intersect) {
       return false;
     }
   });
+
   const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // 如果当前注释名称没有记录，则初始化一个新的记录
+  if (!annotationColors[annotationName]) {
+    annotationColors[annotationName] = new Set(); // 用 Set 存储已涂色的索引
+  }
+
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(index, paintColor.r , paintColor.g , paintColor.b );
+    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+
+    // 将绘制的区域保存到注释名称的记录中
+    annotationColors[annotationName].add(index);
   }
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
+
+function restoreAnnotationColors(annotationName) {
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // 如果 colorAttr 不存在，直接返回，防止错误
+  if (!colorAttr) {
+    console.warn('No color attribute found on geometry.');
+    return;
+  }
+
+  // 将所有顶点颜色重置为白色
+  console.log("Restoring annotation colors for:", colorAttr); // 调试输出
+
+  for (let i = 0; i < colorAttr.count; i++) {
+    colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
+  }
+
+  // 如果有指定的注释颜色需要恢复
+  if (annotationColors[annotationName]) {
+    annotationColors[annotationName].forEach(index => {
+      colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+    });
+  }
+
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+}
+
+
 // 更新绘制颜色
 function updatePaintColor(color) {
   // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
   if (typeof color === 'string') {
     paintColor.set(color); // 使用传入的颜色更新 paintColor
+    paintColor.set(color);
+
+    const r = Math.round(paintColor.r * 255);
+    const g = Math.round(paintColor.g * 255);
+    const b = Math.round(paintColor.b * 255);
+
+    paintColor.setRGB(r, g, b);  
   } else {
-    paintColor = new THREE.Color(color); // 直接使用传入的 RGB 数组或其他格式
+    paintColor.set(color);
+
+    const r = Math.round(paintColor.r * 255);
+    const g = Math.round(paintColor.g * 255);
+    const b = Math.round(paintColor.b * 255);
+
+    paintColor.setRGB(r, g, b);  
   }
 }
 
@@ -381,6 +446,7 @@ function eraseIntersectedArea(intersect) {
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
 
+
 function addGUI() {
   if (gui) {
     gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
@@ -413,20 +479,20 @@ function addGUI() {
     });
   cursorFolder.open(); // 确保 "Cursor Circle" 文件夹默认展开
 
-  const renderFolder = gui.addFolder('Render Color');
-  renderFolder
-    .addColor(params, 'renderColor')
-    .name('Render Color')
-    .onChange((value) => {
-      paintColor.set(value);
+  // const renderFolder = gui.addFolder('Render Color');
+  // renderFolder
+  //   .addColor(params, 'renderColor')
+  //   .name('Render Color')
+  //   .onChange((value) => {
+  //     paintColor.set(value);
 
-      const r = Math.round(paintColor.r * 255);
-      const g = Math.round(paintColor.g * 255);
-      const b = Math.round(paintColor.b * 255);
+  //     const r = Math.round(paintColor.r * 255);
+  //     const g = Math.round(paintColor.g * 255);
+  //     const b = Math.round(paintColor.b * 255);
 
-      paintColor.setRGB(r, g, b);
-    });
-  renderFolder.open();
+  //     paintColor.setRGB(r, g, b);
+  //   });
+  // renderFolder.open();
 }
 
 // 更新控制

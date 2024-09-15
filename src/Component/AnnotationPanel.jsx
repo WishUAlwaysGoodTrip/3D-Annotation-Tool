@@ -24,35 +24,42 @@ const AnnotationPanel = ({ onColorChange }) => {
     const selected = e.target.value;
     const selectedAnn = annotations.find(annotation => annotation.name === selected);
     setSelectedAnnotation(selectedAnn);
-    if (e.target.value === 'ADD...') {
+  
+    if (selected === 'ADD...') {
       setShowAddInput(true);
     } else {
       setShowAddInput(false);
-    }
-    if (selectedAnn) {
-      onColorChange(selectedAnn.color);
+      if (selectedAnn) {
+        onColorChange(selectedAnn.color, selectedAnn.name); // 调用回调函数，传递颜色和名字
+      }
     }
   };
+  
   const handleColorChange = (index, color) => {
-  const updatedAnnotations = [...annotations];
-  updatedAnnotations[index].color = color;
-  setAnnotations(updatedAnnotations);
-  onColorChange(updatedAnnotations[index].color); // 更新选中的颜色
-};
-
-
-  const handleAddAnnotation = (e) => {
-    e.preventDefault();
-    if (newAnnotation.trim() !== '') {
-      const newAnnotationObj = { name: newAnnotation, color: newColor };
-      setAnnotations([...annotations.slice(0, annotations.length - 1), newAnnotationObj, { name: 'ADD...', color: '#ffffff' }]);
-      setNewAnnotation('');
-      setNewColor('#af2828');
-      setShowAddInput(false);
-      setSelectedAnnotation(newAnnotationObj);
-      onColorChange(newAnnotationObj.color); 
+    const updatedAnnotations = [...annotations];
+    updatedAnnotations[index].color = color;
+    setAnnotations(updatedAnnotations);
+  
+    // 检查当前选择的注释名称是否匹配，然后更新颜色
+    if (selectedAnnotation && updatedAnnotations[index].name === selectedAnnotation.name) {
+      onColorChange(color, updatedAnnotations[index].name);
     }
   };
+  
+
+
+const handleAddAnnotation = (e) => {
+  e.preventDefault();
+  if (newAnnotation.trim() !== '') {
+    const newAnnotationObj = { name: newAnnotation, color: newColor };
+    setAnnotations([...annotations.slice(0, annotations.length - 1), newAnnotationObj, { name: 'ADD...', color: '#ffffff' }]);
+    setNewAnnotation('');
+    setNewColor('#af2828');
+    setShowAddInput(false);
+    setSelectedAnnotation(newAnnotationObj);
+    onColorChange(newAnnotationObj.color, newAnnotationObj.name); // 添加注释时，调用回调函数
+  }
+};
   
 
   const handleRemoveAnnotation = (annotationToRemove) => {
@@ -170,11 +177,8 @@ const AnnotationPanel = ({ onColorChange }) => {
       <input
         type="color"
         value={annotation.color}
-        onChange={(e) => {
-          const updatedAnnotations = [...annotations];
-          updatedAnnotations[index].color = e.target.value;
-          setAnnotations(updatedAnnotations);
-        }}
+        onChange={(e) => handleColorChange(index, e.target.value)}
+
       />
       <button className="remove-button" onClick={() => handleRemoveAnnotation(annotation)}>
       Remove

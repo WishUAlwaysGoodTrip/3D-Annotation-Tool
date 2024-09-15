@@ -25,7 +25,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
       {fileList.length > 0 && (
        <div className="file-list" style={{ width: `${listWidth}px` }}>
             <div className="folder-path">
-              Folder: {folderPath || 'Unknown Folder'}
+              Folder: {folderPath ? folderPath.split('\\').pop() : 'Unknown Folder'}
             </div>
           {fileList.map((file, index) => (
             <div key={index} onClick={() => onFolderUpload(file)} className="file-item">
