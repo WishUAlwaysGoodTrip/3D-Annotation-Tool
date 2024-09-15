@@ -3,10 +3,10 @@ import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the st
 
 const AnnotationPanel = ({ onColorChange }) => {
   const [annotations, setAnnotations] = useState([
-    { name: 'ADD...', color: '#ffffff' }
+    { name: 'ADD...', color: '#af2828' }
   ]);
   const [newAnnotation, setNewAnnotation] = useState('');
-  const [newColor, setNewColor] = useState('#ffffff');
+  const [newColor, setNewColor] = useState('#af2828');
   const [showAddInput, setShowAddInput] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null); // 保存正在编辑的注释索引
   const [editedAnnotation, setEditedAnnotation] = useState(''); // 保存编辑中的注释名称
@@ -33,7 +33,13 @@ const AnnotationPanel = ({ onColorChange }) => {
       onColorChange(selectedAnn.color);
     }
   };
-  
+  const handleColorChange = (index, color) => {
+  const updatedAnnotations = [...annotations];
+  updatedAnnotations[index].color = color;
+  setAnnotations(updatedAnnotations);
+  onColorChange(updatedAnnotations[index].color); // 更新选中的颜色
+};
+
 
   const handleAddAnnotation = (e) => {
     e.preventDefault();
@@ -41,7 +47,7 @@ const AnnotationPanel = ({ onColorChange }) => {
       const newAnnotationObj = { name: newAnnotation, color: newColor };
       setAnnotations([...annotations.slice(0, annotations.length - 1), newAnnotationObj, { name: 'ADD...', color: '#ffffff' }]);
       setNewAnnotation('');
-      setNewColor('#ffffff');
+      setNewColor('#af2828');
       setShowAddInput(false);
       setSelectedAnnotation(newAnnotationObj);
       onColorChange(newAnnotationObj.color); 
@@ -70,6 +76,7 @@ const AnnotationPanel = ({ onColorChange }) => {
     onColorChange(updatedAnnotations[index].color);
     setSelectedAnnotation(updatedAnnotations[index]);
   };
+  
   const teeth = [
     { id: 1, color: '#ffffff' }, // White
     { id: 2, color: '#ffffff' }, // Blue
