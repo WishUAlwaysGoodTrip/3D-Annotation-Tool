@@ -81,10 +81,10 @@
 }
 .file-list {
   position: absolute;
-  top: 60px; /* 根据需要调整位置 */
-  left: 20px; /* 根据需要调整位置 */
+  top: 0px; /* 根据需要调整位置 */
+  left: 0px; 
   width: 200px; /* 根据内容调整宽度 */
-  max-height: 400px;
+  max-height: 100vh;
   overflow-y: auto;
   background: rgba(215,215,215, 0.8);
   border: 1px solid #211b1b;
@@ -144,6 +144,10 @@
 
 .file-item:hover {
   background-color: #e7e6e6;
+}
+
+.file-item.selected {
+  background-color: #eeeaea;
 }
 
 #toolbar {
