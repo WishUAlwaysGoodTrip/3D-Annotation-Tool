@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import persistStorage from "./Store.js";
 import {persist} from "zustand/middleware";
 
 
@@ -12,10 +13,9 @@ const useToolbarStore = create(
         }),
         {
             name: 'toolbar-storage',
-            getStorage: () => localStorage,
+            getStorage: () => persistStorage,
         }
     )
 );
-
 
 export default useToolbarStore;

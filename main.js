@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { ipcMain ,dialog} from 'electron';  // 引入 ipcMain 用于与前端通信
 import fs from 'fs';
 import path from 'path';
+import Store from 'electron-store'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let win;
@@ -216,6 +217,21 @@ function createMenu() {
 app.whenReady().then(() => {
   createWindow();
   createMenu();  // 创建菜单
+});
+
+const store = new Store();
+ipcMain.on('electron-store-get', (event, key) => {
+  event.returnValue = store.get(key);
+});
+
+ipcMain.on('electron-store-set', (event, key, value) => {
+  store.set(key, value);
+  event.returnValue = true;
+});
+
+ipcMain.on('electron-store-delete', (event, key) => {
+  store.delete(key);
+  event.returnValue = true;
 });
 
 app.on('window-all-closed', () => {
