@@ -1,5 +1,6 @@
 
 import ToolbarButton from './ToolbarButton';
+import '../Toolbar.css'
 import useToolbarStore from '../stores/useToolbarStore.js'
 import Draggable from 'react-draggable';
 

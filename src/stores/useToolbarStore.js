@@ -12,6 +12,7 @@ const useToolbarStore = create(
         }),
         {
             name: 'toolbar-storage',
+            getStorage: () => localStorage,
         }
     )
 );
