@@ -2,8 +2,8 @@ import useToolbarStore from '../stores/useToolbarStore.js'
 import '../CursorCirclePanel.css'
 
 const CursorCirclePanel = () => {
-  const [brushOpacity, brushColor, brushSize ] = useToolbarStore();
-  const [setBrushOpacity, setBrushColor, setBrushSize] = useToolbarStore()
+  const {brushOpacity, brushColor, brushSize } = useToolbarStore();
+  const {setBrushOpacity, setBrushColor, setBrushSize} = useToolbarStore();
   const {isPanelVisible, closePanel, } = useToolbarStore();
 
   return (
