@@ -8,8 +8,12 @@ const useToolbarStore = create(
         (set) => ({
             mode: 'dragging', // initial state
             activeButton: 'button4',
+            isPanelVisible: false,
             setMode: (newMode) => set({ mode: newMode }), // function to update state
             setActiveButton: (activeButton) => set({ activeButton: activeButton }),
+            setIsPanelVisible: (state) => set({ isPanelVisible: state }),
+            closePanel: () => set({ isPanelVisible: false })
+        
         }),
         {
             name: 'toolbar-storage',
@@ -19,3 +23,4 @@ const useToolbarStore = create(
 );
 
 export default useToolbarStore;
+

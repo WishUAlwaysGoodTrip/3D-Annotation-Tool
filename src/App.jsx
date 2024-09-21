@@ -9,6 +9,7 @@ import { useFileUploadStore } from './stores/useFileUploadStore.js';
 import { useRecentFiles } from './hooks/useRecentFiles';
 import { useIpcRenderer } from './hooks/useIpcRenderer';
 import AnnotationPanel from './Component/AnnotationPanel.jsx';
+import CursorCirclePanel from './Component/CursorCirclePanel.jsx';
 
 const App = () => {
   const [selectedColor, setSelectedColor] = useState(''); // 保存从 AnnotationPanel 选择的颜色
@@ -51,6 +52,8 @@ const App = () => {
       )}
 
       <Toolbar />
+
+      <CursorCirclePanel />
 
       <Render 
         file={uploadedFile} 

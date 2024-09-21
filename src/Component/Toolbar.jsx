@@ -1,18 +1,22 @@
-
+import React, { useState, useEffect } from 'react'; 
 import ToolbarButton from './ToolbarButton';
 import '../Toolbar.css'
 import useToolbarStore from '../stores/useToolbarStore.js'
 import Draggable from 'react-draggable';
 
 const Toolbar = () => {
-  const {setMode ,activeButton, setActiveButton} = useToolbarStore();
+  const { setMode, activeButton, setActiveButton } = useToolbarStore();
+  const {isPanelVisible, setIsPanelVisible} = useToolbarStore();  
+
   const handleButtonClick = (newMode) => {
     setMode(newMode);
-    console.log(newMode)
+    console.log(newMode);
   };
+
   return (
     <Draggable>
       <div id="toolbar">
+        {/* Button 1 */}
         <ToolbarButton
           normalIcon="./assets/normal_u110.svg"
           hoverIcon="./assets/mouseover_u110_mouseover.svg"
@@ -23,6 +27,7 @@ const Toolbar = () => {
           }}
           id="button1"
         />
+        {/* Button 2 */}
         <ToolbarButton
           normalIcon="./assets/normal_u111.svg"
           hoverIcon="./assets/mouseover_u111_mouseover.svg"
@@ -33,6 +38,7 @@ const Toolbar = () => {
           }}
           id="button2"
         />
+        {/* Button 3 (This button toggles the panel) */}
         <ToolbarButton
           normalIcon="./assets/normal_u105.svg"
           hoverIcon="./assets/mouseover_u105_mouseover.svg"
@@ -40,9 +46,11 @@ const Toolbar = () => {
           onClick={() => {
             handleButtonClick('painting');
             setActiveButton("button3");
+            setIsPanelVisible(!isPanelVisible);  // 点击后显示/隐藏面板
           }}
           id="button3"
         />
+        {/* Button 4 */}
         <ToolbarButton
           normalIcon="./assets/normal_u109.svg"
           hoverIcon="./assets/mouseover_u109_mouseover.svg"
@@ -53,6 +61,7 @@ const Toolbar = () => {
           }}
           id="button4"
         />
+        {/* Button 5 */}
         <ToolbarButton
            normalIcon="./assets/normal_u112.svg"
            hoverIcon="./assets/mouseover_u112_mouseover.svg"
@@ -60,6 +69,7 @@ const Toolbar = () => {
            onClick={() => {
              handleButtonClick('erasing');
              setActiveButton("button5");
+             setIsPanelVisible(!isPanelVisible); 
            }}
            id="button5"
          />
@@ -67,5 +77,6 @@ const Toolbar = () => {
     </Draggable>
   );
 };
+
 
 export default Toolbar;

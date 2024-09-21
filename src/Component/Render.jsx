@@ -481,7 +481,7 @@ function addGUI() {
     .onChange((value) => {
       cursorCircle.scale.set(value / 5, value / 5, value / 5);
     });
-  cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开
+  cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开 
 
   // const renderFolder = gui.addFolder('Render Color');
   // renderFolder

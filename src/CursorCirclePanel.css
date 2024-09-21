@@ -1,0 +1,73 @@
+#cursor-panel {
+    position: fixed;
+    bottom: 10px;
+    left: 20px;
+    background-color: rgba(51, 51, 51, 0.79);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    color: white; 
+    font-family: Arial, sans-serif;
+    width: 250px; 
+}
+
+.close-button {
+    position: absolute;
+    top: 0.5px;
+    right: 0.5px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    color: red; 
+}
+
+.cursor-option {
+    display: flex;
+    justify-content: space-between; /* 左边标签，右边控件 */
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.cursor-option label {
+    flex: 1;
+    font-size: 14px;
+}
+
+.cursor-option input[type="color"] {
+    width: 100px; 
+    height: 25px;  
+    padding: 0;  
+    margin-left: 5px;
+    border-radius: 4px;  
+    border: 1px solid #333;  
+    box-shadow: none; 
+    background-color: transparent;  
+}
+
+
+.cursor-option input[type="text"] {
+    width: 54px; 
+    padding: 5px;
+    background-color: #333;
+    border: 1px solid #555;
+    color: white;
+    margin-left: 5px;
+}
+
+.cursor-option input[type="range"] {
+    width: 100px; 
+}
+
+.cursor-option input[type="number"] {
+    width: 54px; 
+    padding: 5px;
+    background-color: #333;
+    border: 1px solid #555;
+    color: white;
+}
