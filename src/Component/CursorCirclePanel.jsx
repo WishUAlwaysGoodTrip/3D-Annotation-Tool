@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
 import useToolbarStore from '../stores/useToolbarStore.js'
 import '../CursorCirclePanel.css'
 
 const CursorCirclePanel = () => {
-  const [cursorOpacity, setCursorOpacity] = useState(0.5);
-  const [cursorColor, setCursorColor] = useState('#FFFF00');
-  const [cursorSize, setCursorSize] = useState(2);
-  const {isPanelVisible, closePanel} = useToolbarStore();  
+  const [brushOpacity, brushColor, brushSize ] = useToolbarStore();
+  const [setBrushOpacity, setBrushColor, setBrushSize] = useToolbarStore()
+  const {isPanelVisible, closePanel, } = useToolbarStore();
 
   return (
     <>
@@ -20,15 +18,15 @@ const CursorCirclePanel = () => {
                 min="0"
                 max="1"
                 step="0.01"
-                value={cursorOpacity}
-                onChange={(e) => setCursorOpacity(e.target.value)}
+                value={brushOpacity}
+                onChange={(e) => setBrushOpacity(e.target.value)}
               />
               <input
                 type="number"
                 min="0"
                 max="1"
-                value={cursorOpacity}
-                onChange={(e) => setCursorOpacity(e.target.value)}
+                value={brushOpacity}
+                onChange={(e) => setBrushOpacity(e.target.value)}
                 step="0.1"
               />
             </div>
@@ -36,13 +34,13 @@ const CursorCirclePanel = () => {
               <label>Color: </label>
               <input
                 type="color"
-                value={cursorColor}
-                onChange={(e) => setCursorColor(e.target.value)}
+                value={brushColor}
+                onChange={(e) => setBrushColor(e.target.value)}
               />
               <input
                 type="text"
-                value={cursorColor}
-                onChange={(e) => setCursorColor(e.target.value)}
+                value={brushColor}
+                onChange={(e) => setBrushColor(e.target.value)}
               />
             </div>
             <div className="cursor-option">
@@ -51,16 +49,16 @@ const CursorCirclePanel = () => {
                 type="range"
                 min="1"
                 max="20"
-                value={cursorSize}
-                onChange={(e) => setCursorSize(e.target.value)}
+                value={brushSize}
+                onChange={(e) => setBrushSize(e.target.value)}
                 step="0.05"
               />
               <input
                 type="number"
                 min="1"
                 max="20"
-                value={cursorSize}
-                onChange={(e) => setCursorSize(e.target.value)}
+                value={brushSize}
+                onChange={(e) => setBrushSize(e.target.value)}
                 step="0.5"
               />
             </div>
