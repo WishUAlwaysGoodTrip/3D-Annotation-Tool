@@ -43,9 +43,9 @@
   margin-top: 10px;
   display: flex;
   flex-direction: column;
-  max-height: 300px;
   overflow-y: auto;
   padding-right: 10px;
+  transition: max-height 0.3s ease; /* 平滑调整高度 */
 }
 
 .tooth-item {

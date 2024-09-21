@@ -5,6 +5,7 @@ const AnnotationPanel = ({ onColorChange,onToothColorChange }) => {
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
+  const [listHeight, setListHeight] = useState(window.innerHeight * 0.55); // 默认高度
   const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
   const [newColor, setNewColor] = useState('#af2828');
@@ -32,6 +33,18 @@ const AnnotationPanel = ({ onColorChange,onToothColorChange }) => {
     { id: 15, color: '#800080' }, // Pre-set color example
     { id: 16, color: '#555555' }  // Pre-set color example
   ]);
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setListHeight(window.innerHeight * 0.55); // 根据窗口高度设置列表高度
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, []);
+
   useEffect(() => {
     if (annotations.length === 1 && annotations[0].name === 'ADD...') {
       setShowAddInput(true);
@@ -204,7 +217,7 @@ const handleAddAnnotation = (e) => {
 </ul>
 
 )}
-      <div className="tooth-list">
+      <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
         {teeth.map((tooth) => (
           <div 
             key={tooth.id} 
