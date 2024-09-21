@@ -5,6 +5,7 @@ const AnnotationPanel = ({ onColorChange,onToothColorChange }) => {
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
+  const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
   const [newColor, setNewColor] = useState('#af2828');
   const [showAddInput, setShowAddInput] = useState(false);
@@ -70,6 +71,9 @@ const AnnotationPanel = ({ onColorChange,onToothColorChange }) => {
     );
     setTeeth(updatedTeeth);
   
+     // 更新选中的牙齿ID
+     setSelectedToothId(id);
+     
     // 如果有新的颜色则传递颜色，否则传递当前牙齿的颜色
     const colorToPass = newColor || updatedTeeth.find(tooth => tooth.id === id).color;
     
@@ -204,7 +208,7 @@ const handleAddAnnotation = (e) => {
         {teeth.map((tooth) => (
           <div 
             key={tooth.id} 
-            className="tooth-item" 
+            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`}  // 添加 selected 类
             onClick={() => handleToothAction(tooth.id)}  // 只传递牙齿ID，不传递新颜色
             >
             <span>Tooth {tooth.id}</span>
@@ -212,6 +216,7 @@ const handleAddAnnotation = (e) => {
               type="color"
               value={tooth.color}
               onChange={(e) => handleToothAction(tooth.id, e.target.value)}  // 传递牙齿ID和新的颜色
+              className="teeth-color" 
             />
             {/* <div className="circle" style={{ backgroundColor: tooth.color }}></div> */}
           </div>

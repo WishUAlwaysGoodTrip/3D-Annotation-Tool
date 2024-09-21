@@ -67,6 +67,11 @@
   color: #989797;
 }
 
+.tooth-item:hover {
+  background-color: #4c4c4c; 
+  box-shadow: 0 2px 5px rgba(76, 76, 76, 0.2); 
+  cursor: pointer; 
+}
 .circle {
   width: 11px;
   height: 11px;
@@ -244,4 +249,28 @@ form {
 .edit-button:active {
   transform: scale(0.98);
   background-color: #919191; 
+}
+
+.teeth-color {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.teeth-color::-webkit-color-swatch {
+  border: none;
+}
+
+.teeth-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.tooth-item.selected {
+  background-color: rgba(76, 76, 76, 0.5); 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
 }
