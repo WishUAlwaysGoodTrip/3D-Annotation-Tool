@@ -22,7 +22,7 @@ let annotationColors = {}; // 保存每个注释的颜色数据
 let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
 let anotationlistname
 let selectedToothId; // 当前选择的牙齿 ID
-let selecttoothColor
+
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
 const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
@@ -222,11 +222,10 @@ function updateCursorCircleOrientation() {
 function onWindowResize() {
   if (camera && renderer) {
     // 更新相机的宽高比
+    renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    // 更新渲染器大小
-    renderer.setSize(window.innerWidth, window.innerHeight);
   }
 }
 
