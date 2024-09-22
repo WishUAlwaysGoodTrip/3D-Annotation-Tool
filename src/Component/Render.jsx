@@ -5,6 +5,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED} from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
+import { update } from 'three/examples/jsm/libs/tween.module.js';
+import Store from 'electron-store';
+
+const store = new Store();
 // 将 BVH 加速结构的算法方法绑定到 Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -18,8 +22,13 @@ let isPainting = false;
 let threeMode = 'dragging'; // 默认模式为拖拽
 let gui; // 全局 GUI 变量
 let annotationColors = {}; // 保存每个注释的颜色数据
+let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
 let anotationlistname
-const Render = ({file, brushColor, annotationName}) => {
+let selectedToothId; // 当前选择的牙齿 ID
+
+let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
+
+const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
   const { mode } = useToolbarStore();
   useEffect(() => {
     init(); // 初始化 Three.js 场景
@@ -36,6 +45,10 @@ const Render = ({file, brushColor, annotationName}) => {
   }, []);
 
   useEffect(() => { 
+    // 加载持久化存储的注释和牙齿颜色数据
+    annotationColors = store.get('annotationColors') || {};
+    toothPaintData = store.get('toothPaintData') || {};
+
     threeMode = mode;
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
@@ -60,9 +73,19 @@ const Render = ({file, brushColor, annotationName}) => {
       restoreAnnotationColors(annotationName); // 恢复注释的颜色
     }
   }, [brushColor, annotationName]); // 当 brushColor 或 annotationName 变化时调用
+
+  useEffect(() => {
+    if (toothColor,toothId) {
+      selectedToothId = toothId;
+      updatePaintColor(toothColor); // 更新绘制颜色
+      restoreToothColors(selectedToothId); // 恢复涂色
+      console.log(toothColor,selectedToothId)
+    }
+  }, [toothColor, toothId]); // 当 toothColor 或 toothId 变化时调用
   
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
+
 
 // 初始化场景和 Three.js 渲染器
 function init() {
@@ -118,7 +141,7 @@ function init() {
 
   createCursorCircle(); // 创建指示器
   animate(); // 启动动画循环
-  addGUI(); // 添加 GUI 控制
+  // addGUI(); // 添加 GUI 控制
 
   // 添加事件监听器
   updateEventListeners();
@@ -178,11 +201,194 @@ function loadModel(file) {
     targetMesh.position.sub(center);
 
     scene.add(targetMesh);
+
+    // 模型加载完毕后，恢复注释和牙齿颜色
+    if (annotationColors) {
+      Object.keys(annotationColors).forEach(annotationName => {
+        restoreAnnotationColors(annotationName);
+      });
+    }
+
+    if (toothPaintData && selectedToothId) {
+      restoreToothColors(selectedToothId);
+    }
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
 
+
+// 绘制选定区域
+function paintIntersectedArea(intersect, annotationName) {
+  const indices = [];
+  const tempVec = new THREE.Vector3();
+
+  const inverseMatrix = new THREE.Matrix4();
+  inverseMatrix.copy(targetMesh.matrixWorld).invert();
+
+  const circleRadius = cursorCircle.scale.x * 5; 
+  const sphere = new THREE.Sphere();
+  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
+  sphere.radius = circleRadius;
+
+  targetMesh.geometry.boundsTree.shapecast({
+    intersectsBounds: (box) => {
+      const intersects = sphere.intersectsBox(box);
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
+    },
+    intersectsTriangle: (tri, i, contained) => {
+      if (contained || tri.intersectsSphere(sphere)) {
+        const i3 = 3 * i;
+        indices.push(i3, i3 + 1, i3 + 2);
+      }
+      return false;
+    }
+  });
+
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // 确保 annotationColors[annotationName] 是 Set 类型
+  if (!(annotationColors[annotationName] instanceof Set)) {
+    annotationColors[annotationName] = new Set();
+  }
+  if (!toothPaintData[selectedToothId]) {
+    toothPaintData[selectedToothId] = [];
+  }
+
+  for (let i = 0, l = indices.length; i < l; i++) {
+    const index = targetMesh.geometry.index.getX(indices[i]);
+    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+
+    annotationColors[annotationName].add(index);
+    toothPaintData[selectedToothId].push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
+  }
+  
+  store.set('annotationColors', annotationColors);
+  store.set('toothPaintData', toothPaintData);
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+}
+
+
+
+function restoreAnnotationColors(annotationName) {
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // 如果 colorAttr 不存在，直接返回，防止错误
+  if (!colorAttr) {
+    console.warn('No color attribute found on geometry.');
+    return;
+  }
+
+  // 将所有顶点颜色重置为白色
+  console.log("Restoring annotation colors for:", colorAttr); // 调试输出
+
+  for (let i = 0; i < colorAttr.count; i++) {
+    colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
+  }
+
+  // 如果有指定的注释颜色需要恢复
+  if (annotationColors[annotationName]) {
+    annotationColors[annotationName].forEach(index => {
+      colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+    });
+  }
+
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+}
+
+function restoreToothColors(toothId) {
+  console.log("Restoring tooth colors for:", toothPaintData); // 调试输出
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  if (!colorAttr) {
+    console.warn('No color attribute found on geometry.');
+    return;
+  }
+
+  // 清除当前颜色，恢复到白色
+  for (let i = 0; i < colorAttr.count; i++) {
+    colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+  }
+
+  // 如果存在与当前牙齿 ID 相关的涂色数据，则恢复这些数据
+  if (toothPaintData[toothId]) {
+    toothPaintData[toothId].forEach(({ index, color }) => {
+      colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+    });
+  }
+
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+}
+
+// 更新绘制颜色
+function updatePaintColor(color) {
+  console.log("Update Paint Color:", color); // 调试输出
+  // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
+  if (typeof color === 'string') {
+    paintColor.set(color);
+
+    const r = Math.round(paintColor.r * 255);
+    const g = Math.round(paintColor.g * 255);
+    const b = Math.round(paintColor.b * 255);
+
+    paintColor.setRGB(r, g, b);  
+  } else {
+    paintColor = color;
+
+  }
+}
+
+function eraseIntersectedArea(intersect) {
+  const indices = [];
+  const tempVec = new THREE.Vector3();
+
+  const inverseMatrix = new THREE.Matrix4();
+  inverseMatrix.copy(targetMesh.matrixWorld).invert();
+
+  const circleRadius = cursorCircle.scale.x * 5;
+  const sphere = new THREE.Sphere();
+  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
+  sphere.radius = circleRadius;
+
+  targetMesh.geometry.boundsTree.shapecast({
+    intersectsBounds: (box) => {
+      const intersects = sphere.intersectsBox(box);
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
+    },
+    intersectsTriangle: (tri, i, contained) => {
+      if (contained || tri.intersectsSphere(sphere)) {
+        const i3 = 3 * i;
+        indices.push(i3, i3 + 1, i3 + 2);
+      }
+      return false;
+    }
+  });
+
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  const originalColors = targetMesh.geometry.userData.originalColors;
+
+  for (let i = 0, l = indices.length; i < l; i++) {
+    const index = targetMesh.geometry.index.getX(indices[i]);
+    colorAttr.setXYZ(
+      index,
+      originalColors[index * 3],
+      originalColors[index * 3 + 1],
+      originalColors[index * 3 + 2]
+    );
+
+    // 确保 annotationColors[anotationlistname] 是 Set 类型
+    if (annotationColors[anotationlistname] instanceof Set) {
+      annotationColors[anotationlistname].delete(index);
+    }
+
+    if (toothPaintData[selectedToothId]) {
+      toothPaintData[selectedToothId] = toothPaintData[selectedToothId].filter(item => item.index !== index);
+    }
+  }
+
+  colorAttr.needsUpdate = true;
+  store.set('annotationColors', annotationColors);
+  store.set('toothPaintData', toothPaintData);
+}
 
 // 创建指示器圆形
 function createCursorCircle() {
@@ -206,11 +412,10 @@ function updateCursorCircleOrientation() {
 function onWindowResize() {
   if (camera && renderer) {
     // 更新相机的宽高比
+    renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    // 更新渲染器大小
-    renderer.setSize(window.innerWidth, window.innerHeight);
   }
 }
 
@@ -265,239 +470,58 @@ function onPointerUp(e) {
   }
 }
 
-// 绘制选定区域
-let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
-
-function paintIntersectedArea(intersect, annotationName) {
-
-  const indices = [];
-  const tempVec = new THREE.Vector3();
-
-  const inverseMatrix = new THREE.Matrix4();
-  inverseMatrix.copy(targetMesh.matrixWorld).invert();
-
-  const circleRadius = cursorCircle.scale.x * 5; // 使用指示器的缩放比例调整绘制半径
-  const sphere = new THREE.Sphere();
-  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
-  sphere.radius = circleRadius;
-
-  targetMesh.geometry.boundsTree.shapecast({
-    intersectsBounds: (box) => {
-      const intersects = sphere.intersectsBox(box);
-      if (intersects) {
-        const { min, max } = box;
-        for (let x = 0; x <= 1; x++) {
-          for (let y = 0; y <= 1; y++) {
-            for (let z = 0; z <= 1; z++) {
-              tempVec.set(
-                x === 0 ? min.x : max.x,
-                y === 0 ? min.y : max.y,
-                z === 0 ? min.z : max.z
-              );
-              if (!sphere.containsPoint(tempVec)) {
-                return INTERSECTED;
-              }
-            }
-          }
-          return CONTAINED;
-        }
-      }
-      return intersects ? INTERSECTED : NOT_INTERSECTED;
-    },
-    intersectsTriangle: (tri, i, contained) => {
-      if (contained || tri.intersectsSphere(sphere)) {
-        const i3 = 3 * i;
-        indices.push(i3, i3 + 1, i3 + 2);
-      }
-      return false;
-    }
-  });
-
-  const colorAttr = targetMesh.geometry.getAttribute('color');
-
-  // 如果当前注释名称没有记录，则初始化一个新的记录
-  if (!annotationColors[annotationName]) {
-    annotationColors[annotationName] = new Set(); // 用 Set 存储已涂色的索引
-  }
-
-  for (let i = 0, l = indices.length; i < l; i++) {
-    const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-
-    // 将绘制的区域保存到注释名称的记录中
-    annotationColors[annotationName].add(index);
-  }
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
-}
-
-function restoreAnnotationColors(annotationName) {
-  const colorAttr = targetMesh.geometry.getAttribute('color');
-
-  // 如果 colorAttr 不存在，直接返回，防止错误
-  if (!colorAttr) {
-    console.warn('No color attribute found on geometry.');
-    return;
-  }
-
-  // 将所有顶点颜色重置为白色
-  console.log("Restoring annotation colors for:", colorAttr); // 调试输出
-
-  for (let i = 0; i < colorAttr.count; i++) {
-    colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
-  }
-
-  // 如果有指定的注释颜色需要恢复
-  if (annotationColors[annotationName]) {
-    annotationColors[annotationName].forEach(index => {
-      colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-    });
-  }
-
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
-}
-
-
-// 更新绘制颜色
-function updatePaintColor(color) {
-  // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
-  if (typeof color === 'string') {
-    paintColor.set(color); // 使用传入的颜色更新 paintColor
-    paintColor.set(color);
-
-    const r = Math.round(paintColor.r * 255);
-    const g = Math.round(paintColor.g * 255);
-    const b = Math.round(paintColor.b * 255);
-
-    paintColor.setRGB(r, g, b);  
-  } else {
-    paintColor.set(color);
-
-    const r = Math.round(paintColor.r * 255);
-    const g = Math.round(paintColor.g * 255);
-    const b = Math.round(paintColor.b * 255);
-
-    paintColor.setRGB(r, g, b);  
-  }
-}
-
-function eraseIntersectedArea(intersect) {
-  const indices = [];
-  const tempVec = new THREE.Vector3();
-
-  // 获取目标物体的逆矩阵
-  const inverseMatrix = new THREE.Matrix4();
-  inverseMatrix.copy(targetMesh.matrixWorld).invert();
-
-  // 使用指示器的缩放比例调整擦除半径
-  const circleRadius = cursorCircle.scale.x * 5;
-  const sphere = new THREE.Sphere();
-  sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
-  sphere.radius = circleRadius;
-
-  // 使用 BVH 树进行空间查询
-  targetMesh.geometry.boundsTree.shapecast({
-    intersectsBounds: (box) => {
-      const intersects = sphere.intersectsBox(box);
-      if (intersects) {
-        const { min, max } = box;
-        for (let x = 0; x <= 1; x++) {
-          for (let y = 0; y <= 1; y++) {
-            for (let z = 0; z <= 1; z++) {
-              tempVec.set(
-                x === 0 ? min.x : max.x,
-                y === 0 ? min.y : max.y,
-                z === 0 ? min.z : max.z
-              );
-              if (!sphere.containsPoint(tempVec)) {
-                return INTERSECTED;
-              }
-            }
-          }
-          return CONTAINED;
-        }
-      }
-      return intersects ? INTERSECTED : NOT_INTERSECTED;
-    },
-    intersectsTriangle: (tri, i, contained) => {
-      if (contained || tri.intersectsSphere(sphere)) {
-        const i3 = 3 * i;
-        indices.push(i3, i3 + 1, i3 + 2);
-      }
-      return false;
-    }
-  });
-
-  // 获取几何体的颜色属性和保存的原始颜色
-  const colorAttr = targetMesh.geometry.getAttribute('color');
-  const originalColors = targetMesh.geometry.userData.originalColors;
-
-  // 恢复原始颜色
-  for (let i = 0, l = indices.length; i < l; i++) {
-    const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(
-      index,
-      originalColors[index * 3],
-      originalColors[index * 3 + 1],
-      originalColors[index * 3 + 2]
-    );
-
-    // 删除记录中的已擦除部分
-    if (annotationColors[anotationlistname]) {
-      annotationColors[anotationlistname].delete(index);
-    }
-  }
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
-}
 
 
 
-function addGUI() {
-  if (gui) {
-    gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
-  }
 
-  gui = new GUI(); // 创建新的 GUI 实例
-  const params = {
-    threeMode: 'dragging',
-    cursorOpacity: cursorCircleMaterial.opacity,
-    cursorColor: cursorCircleMaterial.color.getHex(),
-    cursorSize: 2,
-    renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
-  };
 
-  // 只创建 "Cursor Circle" 和 "Render Color" 控件，而不包括模式切换控件
-  const cursorFolder = gui.addFolder('Cursor Circle');
-  cursorFolder
-    .add(params, 'cursorOpacity', 0, 1)
-    .name('Opacity')
-    .onChange((value) => (cursorCircleMaterial.opacity = value));
-  cursorFolder
-    .addColor(params, 'cursorColor')
-    .name('Color')
-    .onChange((value) => cursorCircleMaterial.color.setHex(value));
-  cursorFolder
-    .add(params, 'cursorSize', 1, 20)
-    .name('Size')
-    .onChange((value) => {
-      cursorCircle.scale.set(value / 5, value / 5, value / 5);
-    });
-  cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开 
+// function addGUI() {
+//   if (gui) {
+//     gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
+//   }
 
-  // const renderFolder = gui.addFolder('Render Color');
-  // renderFolder
-  //   .addColor(params, 'renderColor')
-  //   .name('Render Color')
-  //   .onChange((value) => {
-  //     paintColor.set(value);
+//   gui = new GUI(); // 创建新的 GUI 实例
+//   const params = {
+//     threeMode: 'dragging',
+//     cursorOpacity: cursorCircleMaterial.opacity,
+//     cursorColor: cursorCircleMaterial.color.getHex(),
+//     cursorSize: 2,
+//     renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
+//   };
 
-  //     const r = Math.round(paintColor.r * 255);
-  //     const g = Math.round(paintColor.g * 255);
-  //     const b = Math.round(paintColor.b * 255);
+//   // 只创建 "Cursor Circle" 和 "Render Color" 控件，而不包括模式切换控件
+//   const cursorFolder = gui.addFolder('Cursor Circle');
+//   cursorFolder
+//     .add(params, 'cursorOpacity', 0, 1)
+//     .name('Opacity')
+//     .onChange((value) => (cursorCircleMaterial.opacity = value));
+//   cursorFolder
+//     .addColor(params, 'cursorColor')
+//     .name('Color')
+//     .onChange((value) => cursorCircleMaterial.color.setHex(value));
+//   cursorFolder
+//     .add(params, 'cursorSize', 1, 20)
+//     .name('Size')
+//     .onChange((value) => {
+//       cursorCircle.scale.set(value / 5, value / 5, value / 5);
+//     });
+//   cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开 
 
-  //     paintColor.setRGB(r, g, b);
-  //   });
-  // renderFolder.open();
-}
+//   const renderFolder = gui.addFolder('Render Color');
+//   renderFolder
+//     .addColor(params, 'renderColor')
+//     .name('Render Color')
+//     .onChange((value) => {
+//       paintColor.set(value);
+
+//       const r = Math.round(paintColor.r * 255);
+//       const g = Math.round(paintColor.g * 255);
+//       const b = Math.round(paintColor.b * 255);
+
+//       paintColor.setRGB(r, g, b);
+//     });
+//   renderFolder.open();
+// }
 
 // 更新控制
 function updateControls() {

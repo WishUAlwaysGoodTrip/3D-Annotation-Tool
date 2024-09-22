@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the styles
 
-const AnnotationPanel = ({ onColorChange }) => {
+const AnnotationPanel = ({ onColorChange,onToothColorChange }) => {
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
+  const [listHeight, setListHeight] = useState(window.innerHeight * 0.55); // 默认高度
+  const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
   const [newColor, setNewColor] = useState('#af2828');
   const [showAddInput, setShowAddInput] = useState(false);
@@ -13,6 +15,35 @@ const AnnotationPanel = ({ onColorChange }) => {
   const [clickTimer, setClickTimer] = useState(null); // 用于区分单击和双击
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [teeth, setTeeth] = useState([
+    { id: 1, color: '#ffffff' },
+    { id: 2, color: '#ffffff' },
+    { id: 3, color: '#ffffff' },
+    { id: 4, color: '#ffffff' },
+    { id: 5, color: '#ffffff' },
+    { id: 6, color: '#ffffff' },
+    { id: 7, color: '#ffffff' },
+    { id: 8, color: '#ffffff' },
+    { id: 9, color: '#ffffff' },
+    { id: 10, color: '#ffffff' },
+    { id: 11, color: '#ffffff' },
+    { id: 12, color: '#ffffff' },
+    { id: 13, color: '#ffffff' },
+    { id: 14, color: '#ffffff' },
+    { id: 15, color: '#800080' }, // Pre-set color example
+    { id: 16, color: '#555555' }  // Pre-set color example
+  ]);
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setListHeight(window.innerHeight * 0.55); // 根据窗口高度设置列表高度
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (annotations.length === 1 && annotations[0].name === 'ADD...') {
@@ -46,7 +77,23 @@ const AnnotationPanel = ({ onColorChange }) => {
     }
   };
   
-
+  const handleToothAction = (id, newColor = null) => {
+    // 如果传入 newColor 表示是颜色修改，否则是点击事件
+    const updatedTeeth = teeth.map(tooth =>
+      tooth.id === id ? { ...tooth, color: newColor || tooth.color } : tooth
+    );
+    setTeeth(updatedTeeth);
+  
+     // 更新选中的牙齿ID
+     setSelectedToothId(id);
+     
+    // 如果有新的颜色则传递颜色，否则传递当前牙齿的颜色
+    const colorToPass = newColor || updatedTeeth.find(tooth => tooth.id === id).color;
+    
+    // 传递牙齿ID和新颜色给父组件（Render组件）
+    onToothColorChange(id, colorToPass);
+  };
+  
 
 const handleAddAnnotation = (e) => {
   e.preventDefault();
@@ -61,7 +108,6 @@ const handleAddAnnotation = (e) => {
   }
 };
   
-
   const handleRemoveAnnotation = (annotationToRemove) => {
     setAnnotations(annotations.filter(annotation => annotation.name !== annotationToRemove.name));
     setSelectedAnnotation(null); // 取消当前选择的注释
@@ -84,24 +130,6 @@ const handleAddAnnotation = (e) => {
     setSelectedAnnotation(updatedAnnotations[index]);
   };
   
-  const teeth = [
-    { id: 1, color: '#ffffff' }, // White
-    { id: 2, color: '#ffffff' }, // Blue
-    { id: 3, color: '#ffffff' },
-    { id: 4, color: '#ffffff' }, 
-    { id: 5, color: '#ffffff' }, 
-    { id: 6, color: '#ffffff' }, 
-    { id: 7, color: '#ffffff' }, // Blue
-    { id: 8, color: '#ffffff' }, 
-    { id: 9, color: '#ffffff' }, 
-    { id: 10, color: '#ffffff' }, // Purple
-    { id: 11, color: '#ffffff' },
-    { id: 12, color: '#ffffff' }, // Blue
-    { id: 13, color: '#ffffff' }, // White
-    { id: 14, color: '#ffffff' }, 
-    { id: 15, color: '#800080' }, // Purple
-    { id: 16, color: '#555555' }  
-  ];
 
   return (
     <div className="annotation-panel">
@@ -189,13 +217,21 @@ const handleAddAnnotation = (e) => {
 </ul>
 
 )}
-
-    
-      <div className="tooth-list">
+      <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
         {teeth.map((tooth) => (
-          <div key={tooth.id} className="tooth-item">
+          <div 
+            key={tooth.id} 
+            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`}  // 添加 selected 类
+            onClick={() => handleToothAction(tooth.id)}  // 只传递牙齿ID，不传递新颜色
+            >
             <span>Tooth {tooth.id}</span>
-            <div className="circle" style={{ backgroundColor: tooth.color }}></div>
+            <input
+              type="color"
+              value={tooth.color}
+              onChange={(e) => handleToothAction(tooth.id, e.target.value)}  // 传递牙齿ID和新的颜色
+              className="teeth-color" 
+            />
+            {/* <div className="circle" style={{ backgroundColor: tooth.color }}></div> */}
           </div>
         ))}
       </div>

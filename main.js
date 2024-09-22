@@ -28,6 +28,29 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, 'dist', 'index.html'));
   }
+    win.webContents.on('did-finish-load', () => {
+      loadDefaultFile();
+    });
+}
+
+function loadDefaultFile() {
+  const defaultFilePath = path.join(__dirname, 'public', 'datasettest', 'SuperMario02.stl');
+
+  // 检查文件是否存在
+  if (fs.existsSync(defaultFilePath)) {
+    const fileData = fs.readFileSync(defaultFilePath);
+    const fileBase64 = fileData.toString('base64');
+
+    // 将文件发送到渲染进程
+    win.webContents.send('file-selected', {
+      name: 'SuperMario02.stl',
+      path: defaultFilePath,
+      data: fileBase64,
+      size: fs.statSync(defaultFilePath).size
+    });
+  } else {
+    console.error('Default STL file not found at:', defaultFilePath);
+  }
 }
 function createHotkeysWindow() {
   // 如果窗口已经存在，则不需要重新创建

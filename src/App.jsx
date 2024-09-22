@@ -14,6 +14,8 @@ import CursorCirclePanel from './Component/CursorCirclePanel.jsx';
 const App = () => {
   const [selectedColor, setSelectedColor] = useState(''); // 保存从 AnnotationPanel 选择的颜色
   const [currentAnnotationName, setCurrentAnnotationName] = useState(''); // 保存当前选中的注释名称
+  const [selecttoothColor, setToothColors] = useState(''); // 保存牙齿ID和对应的颜色
+  const [selectedToothId, setSelectedToothId] = useState(''); // 保存当前选中的牙齿ID
   const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUploadStore();
   const { recentFiles, showRecentFiles, toggleRecentFiles, setRecentFiles, setShowRecentFiles } = useRecentFiles(uploadedFile);
 
@@ -28,7 +30,12 @@ const App = () => {
   const handleColorChange = (color, annotationName) => {
     setSelectedColor(color); 
     setCurrentAnnotationName(annotationName); // 保存当前注释名称
-    console.log('color app', color, annotationName);
+  };
+
+  const handleToothColorChange = (toothId, color) => {
+    setToothColors(color);  // 保存牙齿ID和颜色
+    setSelectedToothId(toothId);  // 保存当前选中的牙齿ID
+    console.log('tooth color app', toothId, color);
   };
 
   return (
@@ -59,9 +66,14 @@ const App = () => {
         file={uploadedFile} 
         brushColor={selectedColor} 
         annotationName={currentAnnotationName} 
+        toothColor={selecttoothColor}  // 将牙齿颜色传递给 Render 组件
+        toothId={selectedToothId}  // 将牙齿ID传递给 Render 组件
       />
 
-      <AnnotationPanel onColorChange={handleColorChange} />
+      <AnnotationPanel 
+        onColorChange={handleColorChange} 
+        onToothColorChange={handleToothColorChange}  // 传递牙齿颜色变化处理函数
+      />
     </div>
   );
 };
