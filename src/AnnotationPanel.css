@@ -245,3 +245,17 @@ form {
   transform: scale(0.98);
   background-color: #919191; 
 }
+
+
+
+
+
+.tooth-item {
+  cursor: pointer;
+}
+
+/* 鼠标悬停效果 */
+.tooth-item:hover {
+  background-color: #531ba2; /* 悬停时的背景颜色 */
+}
+

@@ -10,9 +10,87 @@ const AnnotationPanel = ({ onColorChange }) => {
   const [showAddInput, setShowAddInput] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null); // 保存正在编辑的注释索引
   const [editedAnnotation, setEditedAnnotation] = useState(''); // 保存编辑中的注释名称
-  const [clickTimer, setClickTimer] = useState(null); // 用于区分单击和双击
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [selectedTooth, setSelectedTooth] = useState(null);
+  const [jaw, setJaw] = useState('UPPER JAW'); // Currently selected jaw
+  const [upperJawTeeth, setUpperJawTeeth] = useState([]);
+  const [lowerJawTeeth, setLowerJawTeeth] = useState([]);
+  const [annotationColors, setAnnotationColors] = useState({}); 
+  const [newToothName, setNewToothName] = useState(''); // Input for tooth name
+  const [error, setError] = useState(''); // Error message for duplicate tooth names
+  const [annotationTeethState, setAnnotationTeethState] = useState({});
+
+  const handleJawChange = (e) => {
+    setJaw(e.target.value);
+  };
+  
+
+  const handleToothClick = (toothId) => {
+    setSelectedTooth(toothId);
+    if (selectedAnnotation) {
+      applyColor(selectedAnnotation.color);
+    }
+  };
+
+  const handlePaintTooth = (color) => {
+    const teeth = jaw === 'UPPER JAW' ? upperJawTeeth : lowerJawTeeth;
+    const updatedTeeth = teeth.map(tooth =>
+      tooth.id === selectedTooth ? { ...tooth, color } : tooth
+    );
+
+    if (jaw === 'UPPER JAW') {
+      setUpperJawTeeth(updatedTeeth);
+    } else {
+      setLowerJawTeeth(updatedTeeth);
+    }
+  };
+
+  const applyColor = (color) => {
+    handlePaintTooth(color);
+    onColorChange(color, `Tooth ${selectedTooth}`);
+  };
+
+  const handleAddTooth = () => {
+    
+    // Check if the tooth name is unique across both jaws
+    const allTeeth = [...upperJawTeeth, ...lowerJawTeeth];
+    const isDuplicate = allTeeth.some(tooth => tooth.name === newToothName);
+
+    if (isDuplicate || newToothName.trim() === '') {
+      setError('Tooth name must be unique and not empty!');
+      return;
+    }
+
+    const newToothId = jaw === 'UPPER JAW' 
+    ? upperJawTeeth.length + 1  
+    : lowerJawTeeth.length + 100001;  
+
+
+    const newTooth = { id: newToothId, name: newToothName, color: '#ffffff' };
+    setError(''); // Clear any previous errors
+
+    if (jaw === 'UPPER JAW') {
+      setUpperJawTeeth([...upperJawTeeth, newTooth]);
+    } else {
+      setLowerJawTeeth([...lowerJawTeeth, newTooth]);
+    }
+
+    setNewToothName(''); 
+  };
+
+  const handleRemoveTooth = (toothId) => {
+    if (jaw === 'UPPER JAW') {
+      setUpperJawTeeth(upperJawTeeth.filter(tooth => tooth.id !== toothId)); // 从上颌中移除牙齿
+    } else {
+      setLowerJawTeeth(lowerJawTeeth.filter(tooth => tooth.id !== toothId)); // 从下颌中移除牙齿
+    }
+  
+    // 如果被删除的牙齿是当前选中的，重置选中的牙齿
+    if (selectedTooth === toothId) {
+      setSelectedTooth(null);
+    }
+  };
 
   useEffect(() => {
     if (annotations.length === 1 && annotations[0].name === 'ADD...') {
@@ -30,10 +108,34 @@ const AnnotationPanel = ({ onColorChange }) => {
     } else {
       setShowAddInput(false);
       if (selectedAnn) {
+
+        // 加载选中的注释的牙齿状态
+        const currentTeethState = annotationTeethState[selectedAnn.name] || {};
+        setUpperJawTeeth(currentTeethState.upperJaw || []);
+        setLowerJawTeeth(currentTeethState.lowerJaw || []);
         onColorChange(selectedAnn.color, selectedAnn.name); // 调用回调函数，传递颜色和名字
       }
     }
   };
+
+  // 保存当前注释的牙齿状态
+  const saveTeethState = () => {
+    if (selectedAnnotation) {
+      setAnnotationTeethState({
+        ...annotationTeethState,
+        [selectedAnnotation.name]: {
+          upperJaw: upperJawTeeth,
+          lowerJaw: lowerJawTeeth
+        }
+      });
+    }
+  };
+
+  // 每次牙齿或注释状态改变时保存状态
+  useEffect(() => {
+    saveTeethState();
+  }, [upperJawTeeth, lowerJawTeeth]); 
+
   
   const handleColorChange = (index, color) => {
     const updatedAnnotations = [...annotations];
@@ -45,6 +147,25 @@ const AnnotationPanel = ({ onColorChange }) => {
       onColorChange(color, updatedAnnotations[index].name);
     }
   };
+
+  const saveAnnotationColors = () => {
+    if (selectedAnnotation) {
+      const teeth = jaw === 'UPPER JAW' ? upperJawTeeth : lowerJawTeeth;
+      const currentColors = {};
+      teeth.forEach(tooth => {
+        currentColors[tooth.id] = tooth.color;
+      });
+
+      setAnnotationColors({
+        ...annotationColors,
+        [selectedAnnotation.name]: currentColors,
+      });
+    }
+  };
+
+  useEffect(() => {
+    saveAnnotationColors();
+  }, [upperJawTeeth, lowerJawTeeth]);
   
 
 
@@ -84,34 +205,15 @@ const handleAddAnnotation = (e) => {
     setSelectedAnnotation(updatedAnnotations[index]);
   };
   
-  const teeth = [
-    { id: 1, color: '#ffffff' }, // White
-    { id: 2, color: '#ffffff' }, // Blue
-    { id: 3, color: '#ffffff' },
-    { id: 4, color: '#ffffff' }, 
-    { id: 5, color: '#ffffff' }, 
-    { id: 6, color: '#ffffff' }, 
-    { id: 7, color: '#ffffff' }, // Blue
-    { id: 8, color: '#ffffff' }, 
-    { id: 9, color: '#ffffff' }, 
-    { id: 10, color: '#ffffff' }, // Purple
-    { id: 11, color: '#ffffff' },
-    { id: 12, color: '#ffffff' }, // Blue
-    { id: 13, color: '#ffffff' }, // White
-    { id: 14, color: '#ffffff' }, 
-    { id: 15, color: '#800080' }, // Purple
-    { id: 16, color: '#555555' }  
-  ];
-
   return (
     <div className="annotation-panel">
-      <div className="dropdown">
-        <label htmlFor="location-list">Location</label>
-        <select id="location-list">
-          <option value="UPPER JAW">UPPER JAW</option>
-          <option value="LOWER JAW">LOWER JAW</option>
-        </select>
-      </div>
+    <div className="dropdown">
+      <label htmlFor="location-list">Location</label>
+      <select id="location-list" onChange={handleJawChange}>
+        <option value="UPPER JAW">UPPER JAW</option>
+        <option value="LOWER JAW">LOWER JAW</option>
+      </select>
+    </div>
       
       <div className="dropdown">
         <label htmlFor="annotation-list">Annotation List</label>
@@ -190,14 +292,41 @@ const handleAddAnnotation = (e) => {
 
 )}
 
-    
-      <div className="tooth-list">
-        {teeth.map((tooth) => (
-          <div key={tooth.id} className="tooth-item">
-            <span>Tooth {tooth.id}</span>
-            <div className="circle" style={{ backgroundColor: tooth.color }}></div>
-          </div>
-        ))}
+<div className="tooth-section">
+        <h3>{jaw}</h3>
+        <ul className="tooth-list">
+          {(jaw === 'UPPER JAW' ? upperJawTeeth : lowerJawTeeth).map((tooth) => (
+            <li
+              key={tooth.id}
+              className={`tooth-item ${selectedTooth === tooth.id ? 'selected' : ''}`}
+              onClick={() => handleToothClick(tooth.name)}
+            >
+              {tooth.name}
+              <button
+                className="remove-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTooth(tooth.id);
+                }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {/* Add Tooth Section */}
+        <div className="add-tooth-section">
+          <input
+            type="text"
+            value={newToothName}
+            onChange={(e) => setNewToothName(e.target.value)}
+            placeholder="Enter tooth name"
+            className="custom-input"
+          />
+          <button onClick={handleAddTooth} className="add-button">Add Tooth</button>
+          {error && <p className="error-message">{error}</p>}
+        </div>
       </div>
     </div>
   );
