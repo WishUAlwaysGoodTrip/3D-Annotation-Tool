@@ -2,8 +2,8 @@ import useToolbarStore from '../stores/useToolbarStore.js'
 import '../CursorCirclePanel.css'
 
 const CursorCirclePanel = () => {
-  const {brushOpacity, brushColor, brushSize } = useToolbarStore();
-  const {setBrushOpacity, setBrushColor, setBrushSize} = useToolbarStore();
+  const {cursorOpacity, cursorColor, cursorSize } = useToolbarStore();
+  const {setCursorOpacity, setCursorColor, setCursorSize} = useToolbarStore();
   const {isPanelVisible, closePanel, } = useToolbarStore();
 
   return (
@@ -18,15 +18,15 @@ const CursorCirclePanel = () => {
                 min="0"
                 max="1"
                 step="0.01"
-                value={brushOpacity}
-                onChange={(e) => setBrushOpacity(e.target.value)}
+                value={cursorOpacity}
+                onChange={(e) => setCursorOpacity(parseFloat(e.target.value))}
               />
               <input
                 type="number"
                 min="0"
                 max="1"
-                value={brushOpacity}
-                onChange={(e) => setBrushOpacity(e.target.value)}
+                value={cursorOpacity}
+                onChange={(e) => setCursorOpacity(parseFloat(e.target.value))}
                 step="0.1"
               />
             </div>
@@ -34,13 +34,13 @@ const CursorCirclePanel = () => {
               <label>Color: </label>
               <input
                 type="color"
-                value={brushColor}
-                onChange={(e) => setBrushColor(e.target.value)}
+                value={cursorColor}
+                onChange={(e) => setCursorColor(e.target.value)}
               />
               <input
                 type="text"
-                value={brushColor}
-                onChange={(e) => setBrushColor(e.target.value)}
+                value={cursorColor}
+                onChange={(e) => setCursorColor(e.target.value)}
               />
             </div>
             <div className="cursor-option">
@@ -49,16 +49,16 @@ const CursorCirclePanel = () => {
                 type="range"
                 min="1"
                 max="20"
-                value={brushSize}
-                onChange={(e) => setBrushSize(e.target.value)}
+                value={cursorSize}
+                onChange={(e) => setCursorSize(parseFloat(e.target.value))}
                 step="0.05"
               />
               <input
                 type="number"
                 min="1"
                 max="20"
-                value={brushSize}
-                onChange={(e) => setBrushSize(e.target.value)}
+                value={cursorSize}
+                onChange={(e) => setCursorSize(parseFloat(e.target.value))}
                 step="0.5"
               />
             </div>

@@ -9,16 +9,16 @@ const useToolbarStore = create(
             mode: 'dragging', // initial state
             activeButton: 'button4',
             isPanelVisible: false,
-            brushOpacity:0.5,
-            brushColor:'#FFFF00',
-            brushSize:2.0,
+            cursorOpacity:0.5,
+            cursorColor:'#FFFF00',
+            cursorSize:2.0,
             setMode: (newMode) => set({ mode: newMode }), // function to update state
             setActiveButton: (activeButton) => set({ activeButton: activeButton }),
             setIsPanelVisible: (state) => set({ isPanelVisible: state }),
             closePanel: () => set({ isPanelVisible: false }),
-            setBrushOpacity:(newValue) => set({ brushOpacity: newValue }),
-            setBrushColor:(newColor) => set({ brushColor: newColor }),
-            setBrushSize:(newValue) => set({ brushSize: newValue }),
+            setCursorOpacity:(newValue) => set({ cursorOpacity: newValue }),
+            setCursorColor:(newColor) => set({ cursorColor: newColor }),
+            setCursorSize:(newValue) => set({ cursorSize: newValue }),
         }),
         {
             name: 'toolbar-storage',
