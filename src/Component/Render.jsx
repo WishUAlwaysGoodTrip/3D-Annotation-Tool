@@ -28,8 +28,10 @@ let selectedToothId; // 当前选择的牙齿 ID
 
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
+
 const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
   const { mode } = useToolbarStore();
+  const { cursorOpacity, cursorColor, cursorSize } = useToolbarStore();
   useEffect(() => {
     init(); // 初始化 Three.js 场景
     window.addEventListener('resize', onWindowResize);
@@ -82,6 +84,24 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
       console.log(toothColor,selectedToothId)
     }
   }, [toothColor, toothId]); // 当 toothColor 或 toothId 变化时调用
+
+  useEffect(() => {
+    if (cursorCircleMaterial) {
+      cursorCircleMaterial.opacity = cursorOpacity;
+    }
+  }, [cursorOpacity]);
+
+  useEffect(() => {
+    if (cursorCircleMaterial) {
+      cursorCircleMaterial.color.set(cursorColor);
+    }
+  }, [cursorColor]);
+
+  useEffect(() => {
+    if (cursorCircle) {
+      cursorCircle.scale.set(cursorSize / 5, cursorSize / 5, cursorSize / 5);
+    }
+  }, [cursorSize]);
   
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
