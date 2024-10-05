@@ -25,6 +25,7 @@ let annotationColors = {}; // 保存每个注释的颜色数据
 let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
 let anotationlistname
 let selectedToothId; // 当前选择的牙齿 ID
+let selectedPoint;
 
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
@@ -460,14 +461,51 @@ function onPointerMove(e) {
 function onPointerDown(e) {
   if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = true;
+  } else if(threeMode === 'point'&& e.button === 0){
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    // 检查是否点击在模型上
+    if (targetMesh) {
+      const intersects = raycaster.intersectObject(targetMesh, true);
+
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        createHighlightPoint(intersect.point);
+
+      }
+    }
+    console.log(`Point mouse click`);
   }
 }
+
 
 // 鼠标松开事件处理
 function onPointerUp(e) {
   if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = false;
   }
+}
+
+function createHighlightPoint(position) {
+  // Remove previous point if it exists
+  if (selectedPoint) {
+    scene.remove(selectedPoint);
+    selectedPoint.geometry.dispose();
+    selectedPoint.material.dispose();
+    selectedPoint = null;
+  }
+
+  // Create a new highlight point
+  const geometry = new THREE.SphereGeometry(0.5, 16, 16); // Adjust size as needed
+  const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Adjust color as needed
+  selectedPoint = new THREE.Mesh(geometry, material);
+  selectedPoint.position.copy(position);
+  scene.add(selectedPoint);
 }
 
 
@@ -539,20 +577,24 @@ function updateControls() {
 
 // 更新事件监听器
 function updateEventListeners() {
+  window.removeEventListener('pointermove', onPointerMove, false);
+  window.removeEventListener('pointerdown', onPointerDown, false);
+  window.removeEventListener('pointerup', onPointerUp, false);
+
   if (threeMode === 'painting' || threeMode === 'erasing') {
-    // 在绘画和擦除模式下都添加事件监听器
+    // 添加绘画和擦除模式的事件监听器
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
     console.log(`render ${threeMode}`); // 输出当前模式
 
+  } else if (threeMode === 'point') {
+    //window.addEventListener('pointermove', onPointerMove, false);
+    window.addEventListener('pointerdown', onPointerDown, false);
+    document.body.style.cursor = 'default';
+    console.log(`render ${threeMode}`); // 输出当前模式
   } else {
-    // 在其他模式下移除事件监听器
-    window.removeEventListener('pointermove', onPointerMove, false);
-    window.removeEventListener('pointerdown', onPointerDown, false);
-    window.removeEventListener('pointerup', onPointerUp, false);
-
-    // 恢复默认光标
+    // 其他模式下不需要特殊的事件处理，只需要恢复默认光标
     document.body.style.cursor = 'default';
   }
 }
