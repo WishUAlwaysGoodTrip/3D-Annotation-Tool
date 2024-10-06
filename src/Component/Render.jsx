@@ -26,6 +26,7 @@ let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
 let anotationlistname
 let selectedToothId; // 当前选择的牙齿 ID
 let selectedPoint;
+let selectedPoints = []; // Array to store all highlight points
 
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
@@ -44,6 +45,8 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
       if (renderer) document.body.removeChild(renderer.domElement);
+
+      clearHighlightPoints()
     };
   }, []);
 
@@ -495,8 +498,10 @@ function onPointerDown(e) {
 
       if (intersects.length > 0) {
         const intersect = intersects[0];
-        createHighlightPoint(intersect.point);
-
+        if (!e.ctrlKey) {
+          clearHighlightPoints();
+        }
+        createHighlightPoint(intersect);
       }
     }
     console.log(`Point mouse click`);
@@ -511,21 +516,59 @@ function onPointerUp(e) {
   }
 }
 
-function createHighlightPoint(position) {
-  // Remove previous point if it exists
-  if (selectedPoint) {
-    scene.remove(selectedPoint);
-    selectedPoint.geometry.dispose();
-    selectedPoint.material.dispose();
-    selectedPoint = null;
+function clearHighlightPoints() {
+  if (selectedPoints && selectedPoints.length > 0) {
+    for (let i = 0; i < selectedPoints.length; i++) {
+      scene.remove(selectedPoints[i]);
+      selectedPoints[i].geometry.dispose();
+      selectedPoints[i].material.dispose();
+    }
+    selectedPoints = [];
+  }
+}
+function findNearestVertex(intersect) {
+  const geometry = intersect.object.geometry;
+  const index = geometry.index;
+  const positionAttribute = geometry.attributes.position;
+
+  let closestVertex = new THREE.Vector3();
+  let minDistance = Infinity;
+
+  // Get the indices of the intersected face (triangle)
+  const faceIndices = [
+    intersect.face.a,
+    intersect.face.b,
+    intersect.face.c
+  ];
+
+  // Iterate over the vertices of the intersected face
+  for (let i = 0; i < 3; i++) {
+    const vertexIndex = faceIndices[i];
+    const vertex = new THREE.Vector3().fromBufferAttribute(positionAttribute, vertexIndex);
+    vertex.applyMatrix4(intersect.object.matrixWorld); // Apply world transformation
+
+    const distance = intersect.point.distanceTo(vertex);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestVertex.copy(vertex);
+    }
   }
 
-  // Create a new highlight point
-  const geometry = new THREE.SphereGeometry(0.5, 16, 16); // Adjust size as needed
+  return closestVertex;
+}
+
+function createHighlightPoint(intersect) {
+  // Find the nearest vertex to the intersection point
+  const nearestVertexPosition = findNearestVertex(intersect);
+
+  // Create a new highlight point at the nearest vertex
+  const geometry = new THREE.SphereGeometry(0.3, 16, 16); // Adjust size as needed
   const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Adjust color as needed
   selectedPoint = new THREE.Mesh(geometry, material);
-  selectedPoint.position.copy(position);
+  selectedPoint.position.copy(nearestVertexPosition);
   scene.add(selectedPoint);
+
+  selectedPoints.push(selectedPoint);
 }
 
 
