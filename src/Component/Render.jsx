@@ -90,6 +90,28 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
   }, [toothColor, toothId]); // 当 toothColor 或 toothId 变化时调用
 
   useEffect(() => {
+    function onSaveShortcut(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault(); // 防止默认的保存操作
+  
+        // 持久化存储注释颜色和牙齿颜色数据
+        store.set('annotationColors', annotationColors);
+        store.set('toothPaintData', toothPaintData);
+  
+        console.log('Annotation and tooth paint data saved.');
+      }
+    }
+  
+    window.addEventListener('keydown', onSaveShortcut);
+  
+    // 移除事件监听器
+    return () => {
+      window.removeEventListener('keydown', onSaveShortcut);
+    };
+  }, []);
+  
+
+  useEffect(() => {
     if (cursorCircleMaterial) {
       cursorCircleMaterial.opacity = cursorOpacity;
     }
@@ -287,8 +309,8 @@ function paintIntersectedArea(intersect, annotationName) {
     toothPaintData[selectedToothId].push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
   }
   
-  store.set('annotationColors', annotationColors);
-  store.set('toothPaintData', toothPaintData);
+  // store.set('annotationColors', annotationColors);
+  // store.set('toothPaintData', toothPaintData);
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
 
@@ -410,8 +432,8 @@ function eraseIntersectedArea(intersect) {
   }
 
   colorAttr.needsUpdate = true;
-  store.set('annotationColors', annotationColors);
-  store.set('toothPaintData', toothPaintData);
+  // store.set('annotationColors', annotationColors);
+  // store.set('toothPaintData', toothPaintData);
 }
 
 // 创建指示器圆形
