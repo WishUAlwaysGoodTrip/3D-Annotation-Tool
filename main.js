@@ -28,9 +28,9 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, 'dist', 'index.html'));
   }
-    win.webContents.on('did-finish-load', () => {
-      loadDefaultFile();
-    });
+  win.webContents.on('did-finish-load', () => {
+    loadDefaultFile();
+  });
 }
 
 function loadDefaultFile() {
@@ -85,12 +85,36 @@ function createHotkeysWindow() {
 
   // 监听窗口关闭事件
   hotkeysWindow.on('closed', () => {
-    hotkeysWindow = null;  // 窗口关闭后重置变量
+    hotkeysWindow = null;
   });
 }
 
+function getRecentFilesSubmenu() {
+  const recentFiles = store.get('recentFiles') || [];
 
-// 创建自定义菜单
+  // 过滤掉无效的文件路径
+  const validRecentFiles = recentFiles.filter(filePath => typeof filePath === 'string' && filePath.trim() !== '');
+
+  if (validRecentFiles.length === 0) {
+    return [{ label: 'No recent files', enabled: false }];
+  }
+
+  return validRecentFiles.map(filePath => ({
+    label: path.basename(filePath),
+    click() {
+      const fileData = fs.readFileSync(filePath);
+      const fileBase64 = fileData.toString('base64');
+      const fileObject = {
+        name: path.basename(filePath),
+        path: filePath,
+        data: fileBase64,
+        size: fs.statSync(filePath).size
+      };
+      win.webContents.send('file-selected', fileObject);
+    }
+  }));
+}
+
 function createMenu() {
   const template = [
     {
@@ -106,72 +130,73 @@ function createMenu() {
         { label: 'New Project', click() { console.log('New Project'); } },
         { label: 'Open Folder',
           accelerator: 'CmdOrCtrl+O',
-          click() {     
-          dialog.showOpenDialog({
+          click() {
+            dialog.showOpenDialog({
             properties: ['openDirectory'],  // 允许选择文件夹
-          }).then(result => {
-            if (!result.canceled) {
-              const folderPath = result.filePaths[0];
-      
+            }).then(result => {
+              if (!result.canceled) {
+                const folderPath = result.filePaths[0];
+                
               // 递归函数，用于遍历文件夹及其子文件夹中的 .stl 文件
-              function getAllStlFiles(dirPath) {
-                let stlFiles = [];
-                const files = fs.readdirSync(dirPath);
-      
-                files.forEach(file => {
-                  const filePath = path.join(dirPath, file);
-                  const stat = fs.statSync(filePath);
-      
-                  if (stat.isDirectory()) {
+                function getAllStlFiles(dirPath) {
+                  let stlFiles = [];
+                  const files = fs.readdirSync(dirPath);
+
+                  files.forEach(file => {
+                    const filePath = path.join(dirPath, file);
+                    const stat = fs.statSync(filePath);
+
+                    if (stat.isDirectory()) {
                     // 如果是文件夹，则递归调用函数
-                    stlFiles = stlFiles.concat(getAllStlFiles(filePath));
-                  } else if (file.endsWith('.stl')) {
+                      stlFiles = stlFiles.concat(getAllStlFiles(filePath));
+                    } else if (file.endsWith('.stl')) {
                     // 如果是 .stl 文件，添加到文件列表中
                     const fileData = fs.readFileSync(filePath);  // 同步读取文件数据
                     const fileBase64 = fileData.toString('base64');  // 转换为 base64
-                    stlFiles.push({
-                      name: file,
-                      path: filePath,
-                      data: fileBase64,
-                      size: fs.statSync(filePath).size
-                    });
-                  }
-                });
+                      stlFiles.push({
+                        name: file,
+                        path: filePath,
+                        data: fileBase64,
+                        size: fs.statSync(filePath).size
+                      });
+                    }
+                  });
       
-                return stlFiles;
-              }
-      
+                  return stlFiles;
+                }
+
               // 获取文件夹中所有的 .stl 文件
-              const stlFiles = getAllStlFiles(folderPath);
-      
+                const stlFiles = getAllStlFiles(folderPath);
+
               // 如果有找到 .stl 文件，将文件列表发送到渲染进程
-              if (stlFiles.length > 0) {
-                win.webContents.send('folder-selected', {
-                  folderPath,
-                  files: stlFiles
-                });
-              } else {
-                dialog.showMessageBox({
-                  type: 'warning',
-                  title: 'No STL Files Found',
-                  message: 'No STL files were found. Please select a folder with STL files.',
-                  buttons: ['OK'],
+                if (stlFiles.length > 0) {
+                  win.webContents.send('folder-selected', {
+                    folderPath,
+                    files: stlFiles
+                   });
+                  updateRecentFiles(stlFiles[0].path); 
+                } else {
+                  dialog.showMessageBox({
+                    type: 'warning',
+                    title: 'No STL Files Found',
+                    message: 'No STL files were found. Please select a folder with STL files.',
+                    buttons: ['OK'],
                   defaultId: 0,
-                  modal: true,
+                    modal: true,
                   parent: win,
                 }).then(() => {
                   console.log('No STL files dialog was closed');
-                });
+                  });
+                }
               }
-            }
           }).catch(err => {
             console.log('Error in upload folder:', err);
           });
-            }
+          }
         },
         { 
           label: 'Open File',
-          accelerator: 'CmdOrCtrl+Shift+O', 
+          accelerator: 'CmdOrCtrl+Shift+O',
           click() {
             dialog.showOpenDialog({
               properties: ['openFile'],
@@ -187,10 +212,11 @@ function createMenu() {
                   name: path.basename(filePath),
                   path: filePath,
                   data: fileBase64,  // 将文件内容转换为 base64 字符串
-                  size: fs.statSync(filePath).size 
+                  size: fs.statSync(filePath).size
                  }; // 文件大小// 将选择的文件路径发送到渲染进程
                  // 将文件对象发送到渲染进程
                 win.webContents.send('file-selected', fileObject);
+                updateRecentFiles(filePath); // 更新最近文件
               }
             }).catch(err => {
               console.log('Error:', err);
@@ -198,9 +224,9 @@ function createMenu() {
         },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click() { console.log('Save'); } },
         { label: 'Save As…', click() { console.log('Save As…'); } },
-        { label: 'Open Recent', 
-          accelerator: 'CmdOrCtrl+E', 
-          click() { win.webContents.send('open-recent'); } },
+        { label: 'Open Recent',
+          submenu: getRecentFilesSubmenu() // 动态获取最近文件子菜单
+        },
         { label: 'Export…', click() { console.log('Export…'); } }
       ]
     },
@@ -235,6 +261,17 @@ function createMenu() {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+function updateRecentFiles(filePath) {
+  let recentFiles = store.get('recentFiles') || [];
+  if (!recentFiles.includes(filePath)) {
+    recentFiles.unshift(filePath);
+    if (recentFiles.length > 5) {
+      recentFiles.pop(); // 保留最近的5个文件
+    }
+    store.set('recentFiles', recentFiles);
+    createMenu(); // 重新生成菜单，更新最近文件
+  }
 }
 
 app.whenReady().then(() => {
