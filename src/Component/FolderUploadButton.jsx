@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+const { ipcRenderer } = window.require('electron');
 
 const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, folderPath }) => {
     const [listWidth, setListWidth] = useState(200); // 默认宽度
@@ -38,8 +39,10 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
     };
 
     const handleFileClick = (file) => {
+        console.log('File object:', file);
         setSelectedFile(file); // 设置当前选中的文件
         onFolderUpload(file); // 执行上传逻辑
+        ipcRenderer.send('file-clicked', file.name); 
     };
 
     const toggleListVisibility = () => {

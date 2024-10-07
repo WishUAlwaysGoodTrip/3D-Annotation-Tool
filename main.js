@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let win;
 let hotkeysWindow; // 声明一个全局变量用于保存热键窗口实例
+let latestFolderPath = '';  // 用于保存最新上传的文件夹路径
 
 function createWindow() {
   win = new BrowserWindow({
@@ -136,6 +137,7 @@ function createMenu() {
             }).then(result => {
               if (!result.canceled) {
                 const folderPath = result.filePaths[0];
+                latestFolderPath = folderPath;  // 保存最新上传的文件夹路径
                 
               // 递归函数，用于遍历文件夹及其子文件夹中的 .stl 文件
                 function getAllStlFiles(dirPath) {
@@ -262,16 +264,43 @@ function createMenu() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
+
+function findFileRecursive(directory, fileName) {
+  const files = fs.readdirSync(directory);
+  for (let i = 0; i < files.length; i++) {
+    const filePath = path.join(directory, files[i]);
+    const stat = fs.statSync(filePath);
+
+    // 检查是否是文件夹，如果是，递归搜索子文件夹
+    if (stat.isDirectory()) {
+      const result = findFileRecursive(filePath, fileName);
+      if (result) {
+        return result; // 找到文件，返回文件路径
+      }
+    } else if (files[i] === fileName) {
+      return filePath; // 找到文件，返回文件路径
+    }
+  }
+  return null; // 文件未找到
+}
+
 function updateRecentFiles(filePath) {
   let recentFiles = store.get('recentFiles') || [];
-  if (!recentFiles.includes(filePath)) {
-    recentFiles.unshift(filePath);
-    if (recentFiles.length > 5) {
-      recentFiles.pop(); // 保留最近的5个文件
-    }
-    store.set('recentFiles', recentFiles);
-    createMenu(); // 重新生成菜单，更新最近文件
+  console.log('Updating recent files with:', filePath);  // 打印文件路径
+  // 如果文件已经存在，移除它
+  recentFiles = recentFiles.filter(file => file !== filePath);
+
+  // 将文件添加到列表顶部
+  recentFiles.unshift(filePath);
+
+  // 如果列表长度超过5，移除最老的文件
+  if (recentFiles.length > 5) {
+    recentFiles.pop();  // 保留最近的5个文件
   }
+
+  // 更新最近文件存储
+  store.set('recentFiles', recentFiles);
+  createMenu();  // 重新生成菜单，更新最近文件
 }
 
 app.whenReady().then(() => {
@@ -292,6 +321,22 @@ ipcMain.on('electron-store-set', (event, key, value) => {
 ipcMain.on('electron-store-delete', (event, key) => {
   store.delete(key);
   event.returnValue = true;
+});
+
+ipcMain.on('file-clicked', (event, fileName) => {
+  console.log('File clicked:', fileName);  // 打印文件名
+
+  // 使用保存的最新文件夹路径来查找文件
+  const filePath = findFileRecursive(latestFolderPath, fileName);
+  console.log('FilePath clicked:', filePath);  // 打印文件路径
+
+  // 检查文件是否存在
+  if (fs.existsSync(filePath)) {
+    // 更新最近文件列表
+    updateRecentFiles(filePath);  // 将文件路径添加到最近文件列表
+  } else {
+    console.error('File not found:', filePath);
+  }
 });
 
 app.on('window-all-closed', () => {
