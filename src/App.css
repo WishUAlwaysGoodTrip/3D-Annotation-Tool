@@ -92,37 +92,6 @@
   padding: 10px;
   border-radius: 5px;
 }
-.recent-file-list {
-  position: absolute;
-  top: 50%; /* 将它置于垂直居中的位置 */
-  left: 50%; /* 将它置于水平居中的位置 */
-  transform: translate(-50%, -50%); /* 将它居中对齐 */
-  width: 300px; /* 设置适合的宽度 */
-  max-height: 400px; /* 设置最大高度 */
-  overflow-y: auto;
-  background: rgba(215,215,215, 0.8);
-  border: 1px solid #211b1b;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  padding: 10px;
-  border-radius: 5px;
-}
-.recent-file-list button {
-  display: block;
-  width: 100%;
-  margin-top: 20px; /* 这里增加与上方内容的距离 */
-  padding: 10px;
-  background-color: #1a1a1a;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.recent-file-list button:hover {
-  background-color: #525357;
-}
-
 
 /* 拖动条样式 */
 .resizer {

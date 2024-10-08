@@ -6,7 +6,7 @@ import FolderUploadButton from './Component/FolderUploadButton.jsx';
 import RecentFilesList from './Component/RecentFilesList.jsx';
 import { convertFileObjectToBlob } from './Component/convertFileObjectToBlob';
 import { useFileUploadStore } from './stores/useFileUploadStore.js';
-import { useRecentFiles } from './hooks/useRecentFiles';
+// import { useRecentFiles } from './hooks/useRecentFiles';
 import { useIpcRenderer } from './hooks/useIpcRenderer';
 import AnnotationPanel from './Component/AnnotationPanel.jsx';
 import CursorCirclePanel from './Component/CursorCirclePanel.jsx';
@@ -17,9 +17,9 @@ const App = () => {
   const [selecttoothColor, setToothColors] = useState(''); // 保存牙齿ID和对应的颜色
   const [selectedToothId, setSelectedToothId] = useState(''); // 保存当前选中的牙齿ID
   const { uploadedFile, uploadedFiles, folderPath, handleDirectoryChange, setUploadedFile, setUploadedFiles, setFolderPath } = useFileUploadStore();
-  const { recentFiles, showRecentFiles, toggleRecentFiles, setRecentFiles, setShowRecentFiles } = useRecentFiles(uploadedFile);
+  // const { recentFiles, showRecentFiles, toggleRecentFiles, setRecentFiles, setShowRecentFiles } = useRecentFiles(uploadedFile);
 
-  useIpcRenderer(setUploadedFile, setUploadedFiles, setFolderPath, convertFileObjectToBlob, setShowRecentFiles);
+  useIpcRenderer(setUploadedFile, setUploadedFiles, setFolderPath, convertFileObjectToBlob);
 
     
   const handleFileSelect = (file) => {
@@ -50,13 +50,13 @@ const App = () => {
       </header>
 
       {/* 显示/隐藏最近文件列表 */}
-      {showRecentFiles && (
+      {/* {showRecentFiles && (
         <RecentFilesList 
           recentFiles={recentFiles} 
           onFileSelect={handleFileSelect} 
           toggleRecentFiles={toggleRecentFiles} 
         />
-      )}
+      )} */}
 
       <Toolbar />
 
