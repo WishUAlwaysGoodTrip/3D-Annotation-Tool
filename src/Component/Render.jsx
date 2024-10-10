@@ -263,6 +263,10 @@ function loadModel(file) {
     targetMesh.position.sub(center);
     
     targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
+    // 再次调整位置以确保模型仍然在中心
+    boundingBox.setFromObject(targetMesh);
+    boundingBox.getCenter(center);
+    targetMesh.position.sub(center);
 
     scene.add(targetMesh);
 
