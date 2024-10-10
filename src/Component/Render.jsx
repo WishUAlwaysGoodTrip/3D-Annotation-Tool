@@ -9,11 +9,16 @@ import { update } from 'three/examples/jsm/libs/tween.module.js';
 import Store from 'electron-store';
 import path from 'path';
 
-const store = new Store({
-  cwd: path.join( '../public/datasettest'),
-});
+// 定义一个函数，用于根据 STL 文件名生成对应的 Store 实例
+function createAnnotationStore(stlFilename) {
+  const filenameWithoutExtension = path.basename(stlFilename, '.stl');
+  return new Store({
+    name: filenameWithoutExtension,
+    cwd: path.join(process.cwd(), 'public', 'datasettest'),
+  });
+}
 
-console.log(store.path);
+
 
 // 将 BVH 加速结构的算法方法绑定到 Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -32,6 +37,7 @@ let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
 let anotationlistname
 let selectedToothId; // 当前选择的牙齿 ID
 let selectedPoint;
+let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
 
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
@@ -58,20 +64,37 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
 
   useEffect(() => { 
     // 加载持久化存储的注释和牙齿颜色数据
-    annotationColors = store.get('annotationColors') || {};
-    toothPaintData = store.get('toothPaintData') || {};
-
+    if (annotationStore) {
+      annotationColors = annotationStore.get('annotationColors') || {};
+      toothPaintData = annotationStore.get('toothPaintData') || {};
+    } else {
+      console.warn('annotationStore is not defined');
+    }    
     threeMode = mode;
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
   }, [mode]);
 
      // 监听 file 的变化并加载 STL 模型
+  // useEffect(() => {
+  //   if (file) {
+  //     loadModel(file); // 加载传入的 STL 文件
+  //   }
+  // }, [file]); // 当 file 变化时调用
   useEffect(() => {
     if (file) {
-      loadModel(file); // 加载传入的 STL 文件
+      console.log('File:', file);
+      annotationStore = createAnnotationStore(file.name);
+      if (annotationStore) {
+        annotationColors = annotationStore.get('annotationColors') || {};
+        toothPaintData = annotationStore.get('toothPaintData') || {};
+        loadModel(file); // 加载传入的 STL 文件
+      } else {
+        console.warn('Failed to create annotationStore');
+      }
     }
-  }, [file]); // 当 file 变化时调用
+  }, [file]);
+  
 
   useEffect(() => {
     if (brushColor) {
@@ -99,17 +122,17 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
     function onSaveShortcut(event) {
       if ((event.ctrlKey || event.metaKey) && event.key === 's') {
         event.preventDefault(); // 防止默认的保存操作
-  
+
         // 持久化存储注释颜色和牙齿颜色数据
-        store.set('annotationColors', annotationColors);
-        store.set('toothPaintData', toothPaintData);
-  
+        annotationStore.set('annotationColors', annotationColors);
+        annotationStore.set('toothPaintData', toothPaintData);
+
         console.log('Annotation and tooth paint data saved.');
       }
     }
-  
+
     window.addEventListener('keydown', onSaveShortcut);
-  
+
     // 移除事件监听器
     return () => {
       window.removeEventListener('keydown', onSaveShortcut);
@@ -222,13 +245,6 @@ function loadModel(file) {
       geometry.setAttribute('color', colorAttr);
     }
 
-    // 保存原始颜色（无论是已有的还是新建的）
-    const originalColors = new Float32Array(colorAttr.array.length);
-    for (let i = 0; i < colorAttr.array.length; i++) {
-      originalColors[i] = colorAttr.array[i] / 255; // 转换为 0-1 范围
-    }
-    geometry.userData.originalColors = originalColors; // 保存到 userData 中
-
     // 创建材质并启用顶点颜色
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -245,18 +261,14 @@ function loadModel(file) {
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
     targetMesh.position.sub(center);
+    
     targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
-
-    // 再次调整位置以确保模型仍然在中心
-    boundingBox.setFromObject(targetMesh);
-    boundingBox.getCenter(center);
-    targetMesh.position.sub(center);
 
     scene.add(targetMesh);
 
     // 模型加载完毕后，恢复注释和牙齿颜色
     if (annotationColors) {
-      Object.keys(annotationColors).forEach(annotationName => {
+      Object.keys(annotationColors).forEach((annotationName) => {
         restoreAnnotationColors(annotationName);
       });
     }
@@ -268,7 +280,6 @@ function loadModel(file) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
-
 
 // 绘制选定区域
 function paintIntersectedArea(intersect, annotationName) {
@@ -315,8 +326,7 @@ function paintIntersectedArea(intersect, annotationName) {
     toothPaintData[selectedToothId].push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
   }
   
-  // store.set('annotationColors', annotationColors);
-  // store.set('toothPaintData', toothPaintData);
+
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
 
@@ -438,8 +448,6 @@ function eraseIntersectedArea(intersect) {
   }
 
   colorAttr.needsUpdate = true;
-  // store.set('annotationColors', annotationColors);
-  // store.set('toothPaintData', toothPaintData);
 }
 
 // 创建指示器圆形
