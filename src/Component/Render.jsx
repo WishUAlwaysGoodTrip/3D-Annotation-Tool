@@ -7,8 +7,14 @@ import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, IN
 import { GUI } from 'lil-gui';
 import { update } from 'three/examples/jsm/libs/tween.module.js';
 import Store from 'electron-store';
+import path from 'path';
 
-const store = new Store();
+const store = new Store({
+  cwd: path.join( '../public/datasettest'),
+});
+
+console.log(store.path);
+
 // 将 BVH 加速结构的算法方法绑定到 Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
