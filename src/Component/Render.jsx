@@ -245,6 +245,13 @@ function loadModel(file) {
       geometry.setAttribute('color', colorAttr);
     }
 
+    // 保存原始颜色（无论是已有的还是新建的）
+    const originalColors = new Float32Array(colorAttr.array.length);
+    for (let i = 0; i < colorAttr.array.length; i++) {
+      originalColors[i] = colorAttr.array[i] / 255; // 转换为 0-1 范围
+    }
+    geometry.userData.originalColors = originalColors; // 保存到 userData 中
+    
     // 创建材质并启用顶点颜色
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -403,6 +410,7 @@ function updatePaintColor(color) {
   }
 }
 
+// 擦除选定区域，恢复为物体的原始颜色
 function eraseIntersectedArea(intersect) {
   const indices = [];
   const tempVec = new THREE.Vector3();
@@ -418,6 +426,24 @@ function eraseIntersectedArea(intersect) {
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
       const intersects = sphere.intersectsBox(box);
+      if (intersects) {
+        const { min, max } = box;
+        for (let x = 0; x <= 1; x++) {
+          for (let y = 0; y <= 1; y++) {
+            for (let z = 0; z <= 1; z++) {
+              tempVec.set(
+                x === 0 ? min.x : max.x,
+                y === 0 ? min.y : max.y,
+                z === 0 ? min.z : max.z
+              );
+              if (!sphere.containsPoint(tempVec)) {
+                return INTERSECTED;
+              }
+            }
+          }
+          return CONTAINED;
+        }
+      }
       return intersects ? INTERSECTED : NOT_INTERSECTED;
     },
     intersectsTriangle: (tri, i, contained) => {
@@ -429,30 +455,26 @@ function eraseIntersectedArea(intersect) {
     }
   });
 
+  // 获取几何体的颜色属性和保存的原始颜色
   const colorAttr = targetMesh.geometry.getAttribute('color');
   const originalColors = targetMesh.geometry.userData.originalColors;
 
-  for (let i = 0, l = indices.length; i < l; i++) {
-    const index = targetMesh.geometry.index.getX(indices[i]);
-    colorAttr.setXYZ(
-      index,
-      originalColors[index * 3],
-      originalColors[index * 3 + 1],
-      originalColors[index * 3 + 2]
-    );
+  // 使用异步批量更新原始颜色
+  setTimeout(() => {
+    indices.forEach((index) => {
+      const idx = targetMesh.geometry.index.getX(index);
+      colorAttr.setXYZ(
+        idx,
+        originalColors[idx * 3],
+        originalColors[idx * 3 + 1],
+        originalColors[idx * 3 + 2]
+      );
+    });
 
-    // 确保 annotationColors[anotationlistname] 是 Set 类型
-    if (annotationColors[anotationlistname] instanceof Set) {
-      annotationColors[anotationlistname].delete(index);
-    }
-
-    if (toothPaintData[selectedToothId]) {
-      toothPaintData[selectedToothId] = toothPaintData[selectedToothId].filter(item => item.index !== index);
-    }
-  }
-
-  colorAttr.needsUpdate = true;
+    colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  }, 0);
 }
+
 
 // 创建指示器圆形
 function createCursorCircle() {
