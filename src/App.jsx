@@ -3,7 +3,7 @@ import './App.css';
 import Render from './Component/Render.jsx';
 import Toolbar from './Component/Toolbar.jsx';
 import FolderUploadButton from './Component/FolderUploadButton.jsx';
-import RecentFilesList from './Component/RecentFilesList.jsx';
+//import RecentFilesList from './Component/RecentFilesList.jsx';
 import { convertFileObjectToBlob } from './Component/convertFileObjectToBlob';
 import { useFileUploadStore } from './stores/useFileUploadStore.js';
 // import { useRecentFiles } from './hooks/useRecentFiles';

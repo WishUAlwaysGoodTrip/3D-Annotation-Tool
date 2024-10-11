@@ -8,6 +8,7 @@ import { GUI } from 'lil-gui';
 import { update } from 'three/examples/jsm/libs/tween.module.js';
 import Store from 'electron-store';
 import path from 'path';
+import {buildFaceAdjacencyMap, findShortestPath} from '../Util/findPathAStar.js';
 
 // 定义一个函数，用于根据 STL 文件名生成对应的 Store 实例
 function createAnnotationStore(stlFilename) {
@@ -17,6 +18,7 @@ function createAnnotationStore(stlFilename) {
     cwd: path.join(process.cwd(), 'public', 'datasettest'),
   });
 }
+
 
 
 
@@ -39,6 +41,8 @@ let selectedToothId; // 当前选择的牙齿 ID
 let selectedPoint;
 let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
+let selectedFaces = [];
+let previousSelectedFace = null;
 
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
@@ -69,7 +73,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
       toothPaintData = annotationStore.get('toothPaintData') || {};
     } else {
       console.warn('annotationStore is not defined');
-    }    
+    }
     threeMode = mode;
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
@@ -94,7 +98,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
       }
     }
   }, [file]);
-  
+
 
   useEffect(() => {
     if (brushColor) {
@@ -261,7 +265,7 @@ function loadModel(file) {
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
     targetMesh.position.sub(center);
-    
+
     targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
     // 再次调整位置以确保模型仍然在中心
     boundingBox.setFromObject(targetMesh);
@@ -545,6 +549,35 @@ function onPointerDown(e) {
       }
     }
     console.log(`Point mouse click`);
+  } else if (threeMode === 'line' && e.button === 0) {
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    if (targetMesh) {
+      const intersects = raycaster.intersectObject(targetMesh, true);
+
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        const faceIndex = intersect.faceIndex; // 获取点击的面索引
+
+        // 着色点击的面
+        colorFace(faceIndex);
+
+        if (previousSelectedFace != null && e.ctrlKey) {
+          // 如果按下了 Ctrl，找到最短路径并着色
+          const pathFaces = findShortestPath(previousSelectedFace, faceIndex, targetMesh.geometry);
+          pathFaces.forEach(idx => {
+            colorFace(idx);
+          });
+        }
+
+        previousSelectedFace = faceIndex; // 更新上一个选择的面
+      }
+    }
   }
 }
 
@@ -555,6 +588,28 @@ function onPointerUp(e) {
     isPainting = false;
   }
 }
+
+function colorFace(faceIndex) {
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  if (!colorAttr) return;
+
+  const indices = targetMesh.geometry.index;
+  const i0 = indices.getX(faceIndex * 3);
+  const i1 = indices.getX(faceIndex * 3 + 1);
+  const i2 = indices.getX(faceIndex * 3 + 2);
+
+  colorAttr.setXYZ(i0, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+  colorAttr.setXYZ(i1, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+  colorAttr.setXYZ(i2, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
+
+  colorAttr.needsUpdate = true;
+
+  if (!selectedFaces.includes(faceIndex)) {
+    selectedFaces.push(faceIndex);
+  }
+}
+
+
 
 function clearHighlightPoints() {
   if (selectedPoints && selectedPoints.length > 0) {
@@ -691,7 +746,7 @@ function updateEventListeners() {
     window.addEventListener('pointerup', onPointerUp, false);
     console.log(`render ${threeMode}`); // 输出当前模式
 
-  } else if (threeMode === 'point') {
+  } else if (threeMode === 'point'|| threeMode === 'line') {
     //window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     document.body.style.cursor = 'default';
