@@ -22,7 +22,7 @@ const useToolbarStore = create(
         }),
         {
             name: 'toolbar-storage',
-            //getStorage: () => persistStorage,
+            getStorage: () => persistStorage,
         }
     )
 );
