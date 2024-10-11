@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree, CONTAINED, INTERSECTED, NOT_INTERSECTED} from 'three-mesh-bvh';
 import { GUI } from 'lil-gui';
 import { update } from 'three/examples/jsm/libs/tween.module.js';
+import { debounce } from 'lodash';
 import Store from 'electron-store';
 import path from 'path';
 import {buildFaceAdjacencyMap, findShortestPath} from '../Util/findPathAStar.js';
@@ -18,8 +19,6 @@ function createAnnotationStore(stlFilename) {
     cwd: path.join(process.cwd(), 'public', 'datasettest'),
   });
 }
-
-
 
 
 // 将 BVH 加速结构的算法方法绑定到 Three.js
@@ -50,6 +49,24 @@ let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
   const { mode } = useToolbarStore();
   const { cursorOpacity, cursorColor, cursorSize } = useToolbarStore();
+  const updateOpacity = debounce((opacity) => {
+    if (cursorCircleMaterial) {
+      cursorCircleMaterial.opacity = opacity;
+    }
+  }, 100);
+
+  const updateColor = debounce((color) => {
+    if (cursorCircleMaterial) {
+      cursorCircleMaterial.color.set(color);
+    }
+  }, 100);
+
+  const updateSize = debounce((size) => {
+    if (cursorCircle) {
+      cursorCircle.scale.set(size / 5, size / 5, size / 5);
+    }
+  }, 100);
+
   useEffect(() => {
     init(); // 初始化 Three.js 场景
     window.addEventListener('resize', onWindowResize);
@@ -143,23 +160,17 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
     };
   }, []);
   
-
+  // 使用 useEffect 监听 cursorOpacity 并调用 debounce 函数
   useEffect(() => {
-    if (cursorCircleMaterial) {
-      cursorCircleMaterial.opacity = cursorOpacity;
-    }
+    updateOpacity(cursorOpacity);
   }, [cursorOpacity]);
 
   useEffect(() => {
-    if (cursorCircleMaterial) {
-      cursorCircleMaterial.color.set(cursorColor);
-    }
+    updateColor(cursorColor);
   }, [cursorColor]);
 
   useEffect(() => {
-    if (cursorCircle) {
-      cursorCircle.scale.set(cursorSize / 5, cursorSize / 5, cursorSize / 5);
-    }
+    updateSize(cursorSize);
   }, [cursorSize]);
   
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
