@@ -3,4 +3,4 @@
 ## Getting started
 1. Clone the files
 2. Run `npm i` inside the project
-3. Then `npm run electron`
+3. Then `npm run electron` to start in development env.
