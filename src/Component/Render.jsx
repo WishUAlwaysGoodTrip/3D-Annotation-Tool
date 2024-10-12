@@ -10,6 +10,8 @@ import { debounce } from 'lodash';
 import Store from 'electron-store';
 import path from 'path';
 import {buildFaceAdjacencyMap, findShortestPath} from '../Util/findPathAStar.js';
+const { ipcRenderer } = window.require('electron');
+
 
 // 定义一个函数，用于根据 STL 文件名生成对应的 Store 实例
 function createAnnotationStore(stlFilename) {
@@ -155,48 +157,29 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   
 
   useEffect(() => {
-    function onSaveShortcut(event) {
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault(); // 防止默认的保存操作
-
-        // 持久化存储注释颜色和牙齿颜色数据
+    // 保存数据事件处理函数
+    function handleSaveData() {
+      if (annotationStore) {
         annotationStore.set('annotationColors', annotationColors);
         annotationStore.set('toothPaintData', toothPaintData);
-
+  
         console.log('Annotation and tooth paint data saved.');
+        // 通知主进程保存完成
+        ipcRenderer.send('save-complete');
+      } else {
+        console.warn('annotationStore is not defined. Data cannot be saved.');
       }
     }
-
-    window.addEventListener('keydown', onSaveShortcut);
-
-    // 移除事件监听器
-    return () => {
-      window.removeEventListener('keydown', onSaveShortcut);
-    };
-  }, []);
   
-  // useEffect(() => {
-  //   // 保存数据事件处理函数
-  //   function handleSaveData() {
-  //     if (annotationStore) {
-  //       annotationStore.set('annotationColors', annotationColors);
-  //       annotationStore.set('toothPaintData', toothPaintData);
-
-  //       console.log('Annotation and tooth paint data saved.');
-  //     } else {
-  //       console.warn('annotationStore is not defined. Data cannot be saved.');
-  //     }
-  //   }
-
-  //   // 监听 save-data 信号
-  //   ipcRenderer.on('save-data', handleSaveData);
-
-  //   // 清除事件监听器
-  //   return () => {
-  //     ipcRenderer.removeListener('save-data', handleSaveData);
-  //   };
-  // }, [annotationStore, annotationColors, toothPaintData]);
-
+    // 监听 save-data 信号
+    ipcRenderer.on('save-data', handleSaveData);
+  
+    // 清除事件监听器
+    return () => {
+      ipcRenderer.removeListener('save-data', handleSaveData);
+    };
+  }, [annotationStore, annotationColors, toothPaintData]);
+  
   // 使用 useEffect 监听 cursorOpacity 并调用 debounce 函数
   useEffect(() => {
     updateOpacity(cursorOpacity);
@@ -418,6 +401,37 @@ function restoreAnnotationColors(annotationName) {
       colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
     });
   }
+
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+
+}
+
+function restoreAnnotation(annotationName,teethData) {
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // 如果 colorAttr 不存在，直接返回，防止错误
+  if (!colorAttr) {
+    console.warn('No color attribute found on geometry.');
+    return;
+  }
+
+  // 将所有顶点颜色重置为白色
+  for (let i = 0; i < colorAttr.count; i++) {
+    colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
+  }
+
+  // 查找包含指定标签的所有牙齿，并恢复它们的颜色
+  Object.keys(toothPaintData).forEach((toothId) => {
+    const toothData = teethData.find(tooth => tooth.id == toothId);
+    
+    if (toothData && toothData.annotations.some(annotation => annotation.name === annotationName)) {
+      if (toothPaintData[toothId]) {
+        toothPaintData[toothId].forEach(({ index, color }) => {
+          colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+        });
+      }
+    }
+  });
 
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 

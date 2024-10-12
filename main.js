@@ -71,8 +71,8 @@ function createSaveDialog() {
   }
 
   saveDialogWindow = new BrowserWindow({
-    width: 500,
-    height: 420,
+    width: 400,
+    height: 250,
     modal: true,  // 模态窗口，使其成为主窗口的子窗口
     parent: win,
     webPreferences: {
@@ -435,11 +435,15 @@ app.on('activate', () => {
   }
 });
 
-ipcMain.on('save-changes', (event, action) => {
+ipcMain.on('save-changes', async (event, action) => {
   if (action === 'save') {
-    win.webContents.send('save-data');
-    if (saveDialogWindow) saveDialogWindow.close();
-    win.destroy(); // 保存后关闭窗口
+    try {
+      await saveData();  // 确保 saveData() 是一个异步操作并返回 Promise
+      if (saveDialogWindow) saveDialogWindow.close();
+      win.destroy();  // 保存后关闭窗口
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
   } else if (action === 'dontSave') {
     if (saveDialogWindow) saveDialogWindow.close();
     win.destroy();
@@ -447,3 +451,19 @@ ipcMain.on('save-changes', (event, action) => {
     if (saveDialogWindow) saveDialogWindow.close();
   }
 });
+
+// 定义一个异步保存函数
+function saveData() {
+  return new Promise((resolve, reject) => {
+    win.webContents.send('save-data');  // 发送保存信号
+    ipcMain.once('save-complete', () => {
+      resolve();  // 保存完成后调用 resolve
+    });
+
+    // 如果需要，您可以设置超时来防止保存失败的情况
+    setTimeout(() => {
+      reject(new Error('Save operation timed out'));
+    }, 5000);  // 例如，超时时间为 5 秒
+  });
+}
+
