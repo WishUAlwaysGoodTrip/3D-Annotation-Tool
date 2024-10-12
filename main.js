@@ -71,8 +71,8 @@ function createSaveDialog() {
   }
 
   saveDialogWindow = new BrowserWindow({
-    width: 500,
-    height: 420,
+    width: 400,
+    height: 250,
     modal: true,  // 模态窗口，使其成为主窗口的子窗口
     parent: win,
     webPreferences: {
