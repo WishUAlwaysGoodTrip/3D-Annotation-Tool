@@ -93,7 +93,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
           };
 
           // 如果当前有选择的注释，添加到牙齿注释中
-          if (selectedAnnotation && !updatedTooth.annotations.some(ann => ann.name === selectedAnnotation.name)) {
+          if (selectedAnnotation && selectedAnnotation.name !== 'ADD...' && !updatedTooth.annotations.some(ann => ann.name === selectedAnnotation.name)) {
             updatedTooth.annotations.push({
               name: selectedAnnotation.name,
               color: selectedAnnotation.color
@@ -107,11 +107,13 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
     });
 
     setSelectedToothId(id);
-  
+    console.log('selectedAnnotation', selectedAnnotation);
+
     // 传递牙齿ID和新颜色给父组件（Render组件）                         
     const tooth = teeth.find(tooth => tooth.id === id);
     const colorToPass = newColor || (tooth ? tooth.color : '#ffffff');
     onToothColorChange(id, colorToPass);
+    
   };
 
 const handleAddAnnotation = (e) => {
