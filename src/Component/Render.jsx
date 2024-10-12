@@ -46,7 +46,7 @@ let previousSelectedFace = null;
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
 
-const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
+const Render = ({file, brushColor, annotationName, toothColor, toothId,teethData}) => {
   const { mode } = useToolbarStore();
   const { cursorOpacity, cursorColor, cursorSize } = useToolbarStore();
   const updateOpacity = debounce((opacity) => {
@@ -83,6 +83,11 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
     };
   }, []);
 
+  useEffect(() => { 
+    console.log("Teeth Data Render:", teethData); // 调试输出
+
+  }, [teethData]);
+  
   useEffect(() => { 
     // 加载持久化存储的注释和牙齿颜色数据
     if (annotationStore) {
@@ -232,8 +237,6 @@ function init() {
   createCursorCircle(); // 创建指示器
   animate(); // 启动动画循环
   // addGUI(); // 添加 GUI 控制
-
-  // 添加事件监听器
   updateEventListeners();
 }
 
@@ -367,9 +370,6 @@ function restoreAnnotationColors(annotationName) {
     return;
   }
 
-  // 将所有顶点颜色重置为白色
-  console.log("Restoring annotation colors for:", colorAttr); // 调试输出
-
   for (let i = 0; i < colorAttr.count; i++) {
     colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
   }
@@ -409,7 +409,6 @@ function restoreToothColors(toothId) {
 
 // 更新绘制颜色
 function updatePaintColor(color) {
-  console.log("Update Paint Color:", color); // 调试输出
   // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
   if (typeof color === 'string') {
     paintColor.set(color);
@@ -698,59 +697,6 @@ function createHighlightPoint(intersect) {
 
   selectedPoints.push(selectedPoint);
 }
-
-
-
-
-
-
-// function addGUI() {
-//   if (gui) {
-//     gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
-//   }
-
-//   gui = new GUI(); // 创建新的 GUI 实例
-//   const params = {
-//     threeMode: 'dragging',
-//     cursorOpacity: cursorCircleMaterial.opacity,
-//     cursorColor: cursorCircleMaterial.color.getHex(),
-//     cursorSize: 2,
-//     renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
-//   };
-
-//   // 只创建 "Cursor Circle" 和 "Render Color" 控件，而不包括模式切换控件
-//   const cursorFolder = gui.addFolder('Cursor Circle');
-//   cursorFolder
-//     .add(params, 'cursorOpacity', 0, 1)
-//     .name('Opacity')
-//     .onChange((value) => (cursorCircleMaterial.opacity = value));
-//   cursorFolder
-//     .addColor(params, 'cursorColor')
-//     .name('Color')
-//     .onChange((value) => cursorCircleMaterial.color.setHex(value));
-//   cursorFolder
-//     .add(params, 'cursorSize', 1, 20)
-//     .name('Size')
-//     .onChange((value) => {
-//       cursorCircle.scale.set(value / 5, value / 5, value / 5);
-//     });
-//   cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开 
-
-//   const renderFolder = gui.addFolder('Render Color');
-//   renderFolder
-//     .addColor(params, 'renderColor')
-//     .name('Render Color')
-//     .onChange((value) => {
-//       paintColor.set(value);
-
-//       const r = Math.round(paintColor.r * 255);
-//       const g = Math.round(paintColor.g * 255);
-//       const b = Math.round(paintColor.b * 255);
-
-//       paintColor.setRGB(r, g, b);
-//     });
-//   renderFolder.open();
-// }
 
 // 更新控制
 function updateControls() {
