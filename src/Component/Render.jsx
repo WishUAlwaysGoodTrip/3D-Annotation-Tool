@@ -160,6 +160,28 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId}) => {
     };
   }, []);
   
+  // useEffect(() => {
+  //   // 保存数据事件处理函数
+  //   function handleSaveData() {
+  //     if (annotationStore) {
+  //       annotationStore.set('annotationColors', annotationColors);
+  //       annotationStore.set('toothPaintData', toothPaintData);
+
+  //       console.log('Annotation and tooth paint data saved.');
+  //     } else {
+  //       console.warn('annotationStore is not defined. Data cannot be saved.');
+  //     }
+  //   }
+
+  //   // 监听 save-data 信号
+  //   ipcRenderer.on('save-data', handleSaveData);
+
+  //   // 清除事件监听器
+  //   return () => {
+  //     ipcRenderer.removeListener('save-data', handleSaveData);
+  //   };
+  // }, [annotationStore, annotationColors, toothPaintData]);
+
   // 使用 useEffect 监听 cursorOpacity 并调用 debounce 函数
   useEffect(() => {
     updateOpacity(cursorOpacity);
@@ -698,11 +720,6 @@ function createHighlightPoint(intersect) {
 
   selectedPoints.push(selectedPoint);
 }
-
-
-
-
-
 
 // function addGUI() {
 //   if (gui) {

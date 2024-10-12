@@ -10,28 +10,38 @@ const __dirname = dirname(__filename);
 let win;
 let hotkeysWindow; // 声明一个全局变量用于保存热键窗口实例
 let latestFolderPath = '';  // 用于保存最新上传的文件夹路径
+let saveDialogWindow;
+
 
 function createWindow() {
   win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true,  // 允许使用 Node.js API
-      contextIsolation: false // 禁用上下文隔离
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
 
   const isDev = process.env.NODE_ENV === 'development';
 
   if (isDev) {
-    const port = 5173; // 确保这个端口与 vite.config.js 中的配置一致
+    const port = 5173;
     win.loadURL(`http://localhost:${port}/`);
   } else {
     win.loadFile(join(__dirname, 'dist', 'index.html'));
   }
+
   win.webContents.on('did-finish-load', () => {
     loadDefaultFile();
   });
+
+  // 修改主窗口关闭逻辑
+  win.on('close', (event) => {
+    event.preventDefault(); // 防止窗口立即关闭
+    createSaveDialog(); // 创建弹出窗口询问用户是否保存更改
+  });
+  
 }
 
 function loadDefaultFile() {
@@ -53,6 +63,80 @@ function loadDefaultFile() {
     console.error('Default STL file not found at:', defaultFilePath);
   }
 }
+
+function createSaveDialog() {
+  if (saveDialogWindow) {
+    saveDialogWindow.focus();
+    return;
+  }
+
+  saveDialogWindow = new BrowserWindow({
+    width: 500,
+    height: 420,
+    modal: true,  // 模态窗口，使其成为主窗口的子窗口
+    parent: win,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    autoHideMenuBar: true, 
+  });;
+
+  saveDialogWindow.loadFile(join(__dirname, 'public', 'save-dialog.html')).then(() => {
+    setTimeout(() => {
+      saveDialogWindow.show();
+    }, 200);  // 200毫秒延迟
+  });
+
+  // saveDialogWindow.once('ready-to-show', () => {
+  //   saveDialogWindow.show();
+  // });
+
+  saveDialogWindow.on('closed', () => {
+    saveDialogWindow = null;
+  });
+}
+
+// function createSaveDialog() {
+//   if (saveDialogWindow) {
+//     saveDialogWindow.focus();
+//     return;
+//   }
+
+//   saveDialogWindow = new BrowserWindow({
+//     width: 500,
+//     height: 420,
+//     modal: true,  // 模态窗口，使其成为主窗口的子窗口
+//     parent: win,
+//     webPreferences: {
+//       nodeIntegration: true,
+//       contextIsolation: false
+//     },
+//     autoHideMenuBar: true, 
+//   });
+
+//   const isDev = process.env.NODE_ENV === 'development';
+
+//   if (isDev) {
+//     const port = 5173;
+//     saveDialogWindow.loadURL(`http://localhost:${port}/save-dialog.html`).then(() => {
+//       setTimeout(() => {
+//         saveDialogWindow.show();
+//       }, 200);  // 200毫秒延迟
+//     });
+//   } else {
+//     saveDialogWindow.loadFile(join(__dirname, 'dist', 'save-dialog.html')).then(() => {
+//       setTimeout(() => {
+//         saveDialogWindow.show();
+//       }, 200);  // 200毫秒延迟
+//     });
+//   }
+//   saveDialogWindow.on('closed', () => {
+//     saveDialogWindow = null;
+//   });
+// }
+
+
 function createHotkeysWindow() {
   // 如果窗口已经存在，则不需要重新创建
   if (hotkeysWindow) {
@@ -224,7 +308,7 @@ function createMenu() {
               console.log('Error:', err);
             });}
         },
-        { label: 'Save', accelerator: 'CmdOrCtrl+S', click() { console.log('Save'); } },
+        { label: 'Save', accelerator: 'CmdOrCtrl+S', click() { win.webContents.send('save-data'); } },
         { label: 'Save As…', click() { console.log('Save As…'); } },
         { label: 'Open Recent',
           submenu: getRecentFilesSubmenu() // 动态获取最近文件子菜单
@@ -348,5 +432,18 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+ipcMain.on('save-changes', (event, action) => {
+  if (action === 'save') {
+    win.webContents.send('save-data');
+    if (saveDialogWindow) saveDialogWindow.close();
+    win.destroy(); // 保存后关闭窗口
+  } else if (action === 'dontSave') {
+    if (saveDialogWindow) saveDialogWindow.close();
+    win.destroy();
+  } else if (action === 'cancel') {
+    if (saveDialogWindow) saveDialogWindow.close();
   }
 });
