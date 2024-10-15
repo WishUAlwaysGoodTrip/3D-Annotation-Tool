@@ -656,7 +656,6 @@ function clearHighlightPoints() {
 }
 function findNearestVertex(intersect) {
   const geometry = intersect.object.geometry;
-  const index = geometry.index;
   const positionAttribute = geometry.attributes.position;
 
   let closestVertex = new THREE.Vector3();

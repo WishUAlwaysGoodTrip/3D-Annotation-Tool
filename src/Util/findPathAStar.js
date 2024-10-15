@@ -16,7 +16,8 @@ export function buildFaceAdjacencyMap(geometry) {
         const y = position.getY(index);
         const z = position.getZ(index);
         const precision = 8;
-        return `${x.toFixed(precision)}_${y.toFixed(precision)}_${z.toFixed(precision)}`;
+        const key = `${x.toFixed(precision)}_${y.toFixed(precision)}_${z.toFixed(precision)}`;
+        return key;
     }
 
     // 第一步：为每个顶点建立到面的映射关系，基于顶点的位置
@@ -50,7 +51,7 @@ export function buildFaceAdjacencyMap(geometry) {
         adjacencyMap[faceIndex] = [];
     }
 
-    // 第二步：遍历每个面，检查哪些面是相邻的（共享至少一个顶点）
+    // 第二步：遍历每个面，检查哪些面是相邻的（共享两条顶点=相邻边）
     for (let faceIndex = 0; faceIndex < faceCount; faceIndex++) {
         let aIndex, bIndex, cIndex;
 
@@ -70,10 +71,22 @@ export function buildFaceAdjacencyMap(geometry) {
 
         const adjacentFaces = new Set();
 
-        [aKey, bKey, cKey].forEach(vertexKey => {
+        // 创建一个函数来统计两个面共享的顶点数量
+        function countSharedVertices(faceVertices, adjFaceIndex) {
+            const sharedVertices = faceVertices.filter(vKey => vertexToFaceMap[vKey].includes(adjFaceIndex));
+            return sharedVertices.length;
+        }
+
+        const faceVertices = [aKey, bKey, cKey];
+
+        // 遍历每个顶点的相邻面，检查是否共享两条顶点
+        faceVertices.forEach(vertexKey => {
             vertexToFaceMap[vertexKey].forEach(adjFaceIndex => {
                 if (adjFaceIndex !== faceIndex) {
-                    adjacentFaces.add(adjFaceIndex);
+                    const sharedVerticesCount = countSharedVertices(faceVertices, adjFaceIndex);
+                    if (sharedVerticesCount === 2) {
+                        adjacentFaces.add(adjFaceIndex);
+                    }
                 }
             });
         });
@@ -81,12 +94,12 @@ export function buildFaceAdjacencyMap(geometry) {
         adjacencyMap[faceIndex] = Array.from(adjacentFaces);
 
         // 调试输出，打印前几个面的相邻关系
-        //if (faceIndex < 10) {
-        //    console.log(`Face ${faceIndex} has adjacent faces: ${Array.from(adjacentFaces)}`);
-        //    if (adjacencyMap[faceIndex].length === 0) {
-        //        console.warn(`Face ${faceIndex} has no adjacent faces!`);
-        //    }
-        //}
+        if (faceIndex < 10) {
+            console.log(`Face ${faceIndex} has adjacent faces: ${Array.from(adjacentFaces)}`);
+            if (adjacencyMap[faceIndex].length === 0) {
+                console.warn(`Face ${faceIndex} has no adjacent faces!`);
+            }
+        }
     }
 
     return adjacencyMap;
