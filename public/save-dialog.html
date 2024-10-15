@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Save Changes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      overflow: hidden;  /* 禁止滚动条 */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100vh;
+    }
+    p {
+      font-size: 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;  /* 将按钮放在右边 */
+      margin-top: 60px;  /* 设置与上方内容的间距，增加按钮向下移动的距离 */
+      padding-bottom: 15px;  /* 增加按钮与窗口底部的距离 */
+    }
+    /* 共享的按钮样式，确保 Save、Don't Save 和 Cancel 一样大 */
+    .modal-footer button {
+      width: 140px;  /* 统一按钮宽度 */
+      height: 40px;  /* 统一按钮高度 */
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-left: 10px;  /* 为按钮之间增加间距 */
+    }
+    /* Cancel 按钮样式 */
+    .cancel-button {
+      background-color: white;  /* 背景色为白色 */
+      color: black;  /* 文字颜色为黑色 */
+      border: 1px solid #ccc;  /* 添加灰色边框 */
+    }
+    .cancel-button:hover {
+      background-color: #f0f0f0;  /* 悬停时稍微变灰 */
+    }
+    /* Save 按钮样式 */
+    .save-button {
+      background-color: #28a745;  /* Save按钮背景色 */
+      color: white;  /* Save按钮文字颜色 */
+      border: none;
+    }
+    .save-button:hover {
+      background-color: #218838;  /* 悬停时变深色 */
+    }
+    /* Don't Save 按钮样式 */
+    .dont-save-button {
+      background-color: #dc3545;  /* Don't Save按钮背景色 */
+      color: white;  /* Don't Save按钮文字颜色 */
+      border: none;
+    }
+    .dont-save-button:hover {
+      background-color: #c82333;  /* 悬停时变深色 */
+    }
+  </style>
+</head>
+<body>
+  <p>Do you want to save your changes?</p>
+  <div class="modal-footer">
+    <button class="cancel-button" onclick="sendAction('cancel')">Cancel</button>  <!-- Cancel 按钮 -->
+    <button class="dont-save-button" onclick="sendAction('dontSave')">Don't Save</button>  <!-- Don't Save 按钮 -->
+    <button class="save-button" onclick="sendAction('save')">Save</button>  <!-- Save 按钮 -->
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    function sendAction(action) {
+      ipcRenderer.send('save-changes', action);
+      window.close();
+    }
+  </script>
+</body>
+</html>
