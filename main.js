@@ -222,7 +222,7 @@ function createMenu() {
               if (!result.canceled) {
                 const folderPath = result.filePaths[0];
                 latestFolderPath = folderPath;  // 保存最新上传的文件夹路径
-                
+                const jsonFiles = getJsonFiles();
               // 递归函数，用于遍历文件夹及其子文件夹中的 .stl 文件
                 function getAllStlFiles(dirPath) {
                   let stlFiles = [];
@@ -253,12 +253,16 @@ function createMenu() {
 
               // 获取文件夹中所有的 .stl 文件
                 const stlFiles = getAllStlFiles(folderPath);
-
+                const matchingFiles = stlFiles.filter(stlFile => {
+                  const stlBaseName = path.basename(stlFile.name, '.stl');
+                  return jsonFiles.includes(stlBaseName);  // 如果有同名的 .json 文件，返回 true
+                });
               // 如果有找到 .stl 文件，将文件列表发送到渲染进程
                 if (stlFiles.length > 0) {
                   win.webContents.send('folder-selected', {
                     folderPath,
-                    files: stlFiles
+                    files: stlFiles,
+                    matchingFiles: matchingFiles.map(file => file.name)
                    });
                   updateRecentFiles(stlFiles[0].path); 
                 } else {
@@ -385,6 +389,15 @@ function updateRecentFiles(filePath) {
   // 更新最近文件存储
   store.set('recentFiles', recentFiles);
   createMenu();  // 重新生成菜单，更新最近文件
+}
+
+// 获取 public/dataset 中所有的 .json 文件
+function getJsonFiles() {
+  const datasetPath = path.join(__dirname, 'public', 'datasettest');
+  const jsonFiles = fs.readdirSync(datasetPath)
+    .filter(file => file.endsWith('.json'))  // 只保留 .json 文件
+    .map(file => path.basename(file, '.json'));  // 去掉扩展名，保留文件名
+  return jsonFiles;
 }
 
 app.whenReady().then(() => {

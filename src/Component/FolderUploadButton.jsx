@@ -7,6 +7,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
     const [listHeight, setListHeight] = useState(window.innerHeight * 0.7); // 默认高度
     const [selectedFile, setSelectedFile] = useState(null); // 保存当前选中的文件
     const [isListVisible, setIsListVisible] = useState(true); 
+    const [highlightedFiles, setHighlightedFiles] = useState([]); // 保存需要高亮的文件名
 
     useEffect(() => {
       const handleWindowResize = () => {
@@ -17,6 +18,18 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
 
       return () => {
         window.removeEventListener('resize', handleWindowResize);
+      };
+    }, []);
+
+    // 当文件夹路径更新时，监听匹配的 .stl 文件
+    useEffect(() => {
+      ipcRenderer.on('folder-selected', (event, { folderPath, files, matchingFiles }) => {
+        setHighlightedFiles(matchingFiles);  // 设置需要高亮的文件名
+      });
+
+      // 清理事件监听器
+      return () => {
+        ipcRenderer.removeAllListeners('folder-selected');
       };
     }, []);
 
@@ -64,15 +77,18 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
                   <div className="folder-path">
                     Folder: {folderPath ? folderPath.split('\\').pop() : 'Unknown Folder'}
                   </div>
-                  {fileList.map((file, index) => (
-                    <div 
-                      key={index} 
-                      onClick={() => handleFileClick(file)} 
-                      className={`file-item ${selectedFile === file ? 'selected' : ''}`}
-                    >
-                      {file.webkitRelativePath || file.name}
-                    </div>
-                  ))}
+                  {fileList.map((file, index) => {
+                    const isHighlighted = highlightedFiles.includes(file.name); // 检查文件是否需要高亮
+                    return (
+                      <div 
+                        key={index} 
+                        onClick={() => handleFileClick(file)} 
+                        className={`file-item ${selectedFile === file ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}`}
+                      >
+                        {file.webkitRelativePath || file.name}
+                      </div>
+                    );
+                  })}
                   {/* 用于调整宽度的 resizer */}
                   <div 
                     className="resizer" 

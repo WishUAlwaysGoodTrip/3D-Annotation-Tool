@@ -141,3 +141,7 @@ body {
   display: block;
   margin: 0px;
 }
+
+.file-item.highlighted {
+  background-color: #95de95;
+}
