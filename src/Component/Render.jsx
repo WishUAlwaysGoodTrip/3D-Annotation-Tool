@@ -45,6 +45,7 @@ let selectedFaces = [];
 let previousSelectedFace = null;
 let previousToothId = null;
 let previousToothColor = null;
+let adjacencyMap = null;
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
 
@@ -298,6 +299,7 @@ function loadModel(file) {
 
     // 创建网格对象
     targetMesh = new THREE.Mesh(geometry, material);
+    adjacencyMap = buildFaceAdjacencyMap(geometry);
 
     // 计算模型的边界盒并将其居中
     const boundingBox = new THREE.Box3().setFromObject(targetMesh);
@@ -719,7 +721,7 @@ function onPointerDown(e) {
 
         if (previousSelectedFace != null && e.ctrlKey) {
           // 如果按下了 Ctrl，找到最短路径并着色
-          const pathFaces = findShortestPath(previousSelectedFace, faceIndex, targetMesh.geometry);
+          const pathFaces = findShortestPath(previousSelectedFace, faceIndex, targetMesh.geometry, adjacencyMap);
           pathFaces.forEach(idx => {
             colorFace(idx);
           });

@@ -105,13 +105,13 @@ export function buildFaceAdjacencyMap(geometry) {
     return adjacencyMap;
 }
 
-export function findShortestPath(startFaceIndex, endFaceIndex, geometry) {
+export function findShortestPath(startFaceIndex, endFaceIndex, geometry, adjacencyMap = buildFaceAdjacencyMap(geometry)) {
     console.log(`Starting A* from face ${startFaceIndex} to face ${endFaceIndex}`);
     const positionAttr = geometry.attributes.position;
     const indexAttr = geometry.index;
     const faceCount = indexAttr ? indexAttr.count / 3 : positionAttr.count / 9;
 
-    const adjacencyMap = buildFaceAdjacencyMap(geometry);
+    //const adjacencyMap = buildFaceAdjacencyMap(geometry);
     console.log("Adjacency map built successfully.");
 
     const faceCentroids = new Array(faceCount);
