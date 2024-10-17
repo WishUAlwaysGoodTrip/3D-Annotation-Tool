@@ -3,7 +3,7 @@
     bottom: 10px;
     left: 20px;
     background-color: rgba(51, 51, 51, 0.79);
-    padding: 10px;
+    padding: 10px 20px 10px 10px; 
     border-radius: 10px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
     z-index: 1000;
@@ -12,10 +12,17 @@
     width: 250px; 
 }
 
+.panel-title {
+    margin: 0 0 10px 0; 
+    font-size: 16px;
+    text-align: center;
+    color: white;
+}
+
 .close-button {
     position: absolute;
-    top: 0.5px;
-    right: 0.5px;
+    top: 1px;
+    right: 1px;
     background: none;
     border: none;
     color: white;
@@ -38,6 +45,31 @@
     flex: 1;
     font-size: 14px;
 }
+
+.cursor-option select {
+    width: 100px; 
+    padding: 5px;
+    background-color: #333; 
+    color: white; 
+    border: 1px solid #555;
+    border-radius: 4px; 
+}
+
+.cursor-option select:hover {
+    border-color: #777; 
+}
+
+.cursor-option select:focus {
+    outline: none; 
+    border-color: #aaa; 
+}
+
+.cursor-option select option {
+    background-color: #333; 
+    color: white; 
+}
+
+
 
 .cursor-option input[type="color"] {
     width: 100px; 

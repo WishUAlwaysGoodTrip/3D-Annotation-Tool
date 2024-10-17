@@ -51,7 +51,8 @@ let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
 
 const Render = ({file, brushColor, annotationName, toothColor, toothId, teethData}) => {
   const { mode } = useToolbarStore();
-  const { cursorOpacity, cursorColor, cursorSize } = useToolbarStore();
+  const { cursorOpacity, cursorColor, cursorSize,  cursorShape } = useToolbarStore();
+
   const updateOpacity = debounce((opacity) => {
     if (cursorCircleMaterial) {
       cursorCircleMaterial.opacity = opacity;
@@ -69,6 +70,14 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
       cursorCircle.scale.set(size / 5, size / 5, size / 5);
     }
   }, 100);
+
+  const updateCursorShape = (shape) => {
+    if (cursorCircle) {
+      scene.remove(cursorCircle);  // 移除之前的光标
+    }
+    createCursorCircle(shape);  // 创建新的光标
+  };
+  
 
   useEffect(() => {
     init(); // 初始化 Three.js 场景
@@ -194,9 +203,27 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   useEffect(() => {
     updateSize(cursorSize);
   }, [cursorSize]);
-  
+
+//  useEffect(() => {
+//    if (cursorShape) {
+//      updateCursorShape(cursorShape);  
+//    }
+//  }, [cursorShape]); 
+
+  // 监听 cursorShape 的变化，但保持其他状态不变
+  useEffect(() => {
+    if (cursorShape) {
+      updateCursorShape(cursorShape);  // 只更新光标形状
+    }
+    // 还可以手动调用 updateOpacity、updateColor 和 updateSize，以确保这些属性不变
+    updateOpacity(cursorOpacity);
+    updateColor(cursorColor);
+    updateSize(cursorSize);
+}, [cursorShape]);  // 监听 cursorShape 变化
+
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
+
 
 
 // 初始化场景和 Three.js 渲染器
@@ -611,8 +638,26 @@ function eraseIntersectedArea(intersect) {
 
 
 // 创建指示器圆形
-function createCursorCircle() {
-  const geometry = new THREE.CircleGeometry(5, 32);
+//function createCursorCircle() {
+  //const geometry = new THREE.CircleGeometry(5, 32);
+  //cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+  //cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
+
+//  cursorCircle.position.z = 1; // 初始位置
+//scene.add(cursorCircle);
+//}
+
+// 创建指示器圆形或矩形
+function createCursorCircle(cursorShape) {
+
+  let geometry;
+
+  if (cursorShape === 'circle') {
+    geometry = new THREE.CircleGeometry(5, 32);  // Circle geometry
+  } else if (cursorShape === 'rectangle') {
+    geometry = new THREE.PlaneGeometry(10, 10);  // Rectangle geometry
+  }
+
   cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
   cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
 

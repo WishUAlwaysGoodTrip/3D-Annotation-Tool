@@ -12,6 +12,7 @@ const useToolbarStore = create(
             cursorOpacity:0.5,
             cursorColor:'#FFFF00',
             cursorSize:2.0,
+            cursorShape: 'circle', // New state for shape
             setMode: (newMode) => set({ mode: newMode }), // function to update state
             setActiveButton: (activeButton) => set({ activeButton: activeButton }),
             setIsPanelVisible: (state) => set({ isPanelVisible: state }),
@@ -19,6 +20,7 @@ const useToolbarStore = create(
             setCursorOpacity:(newValue) => set({ cursorOpacity: newValue }),
             setCursorColor:(newColor) => set({ cursorColor: newColor }),
             setCursorSize:(newValue) => set({ cursorSize: newValue }),
+            setCursorShape: (newShape) => set({ cursorShape: newShape }),  // Function to update shape
         }),
         {
             name: 'toolbar-storage',
