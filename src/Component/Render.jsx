@@ -96,13 +96,16 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   }, []);
 
   useEffect(() => { 
-    // 加载持久化存储的注释和牙齿颜色数据
-    if (annotationStore) {
-      annotationColors = annotationStore.get('annotationColors') || {};
-      toothPaintData = annotationStore.get('toothPaintData') || {};
-    } else {
-      console.warn('annotationStore is not defined');
-    }
+    // // 加载持久化存储的注释和牙齿颜色数据
+    // console.log('toothPaintData Color2131312s:', toothPaintData); // 调试输出
+
+    // if (annotationStore) {
+    //   // annotationColors = annotationStore.get('annotationColors') || {};
+    //   toothPaintData = annotationStore.get('toothPaintData') || {};
+    // } else {
+    //   console.warn('annotationStore is not defined');
+    // }
+    // console.log('toothPaintData Colors:', toothPaintData); // 调试输出
     threeMode = mode;
     updateControls(); // 根据新的 mode 更新控制
     updateEventListeners(); // 更新事件监听器
@@ -444,7 +447,7 @@ function restoreAnnotation(annotationName,teethData) {
     console.warn('No color attribute found on geometry.');
     return;
   }
-
+  
   // 将所有顶点颜色重置为白色
   for (let i = 0; i < colorAttr.count; i++) {
     colorAttr.setXYZ(i, 1, 1, 1); // 正确设置为白色（范围为 0 到 1）
@@ -499,7 +502,7 @@ function restoreAnnotation(annotationName,teethData) {
 
 
 function restoreToothColors(toothId) {
-  console.log("Restoring tooth colors for:", toothPaintData); // 调试输出
+  console.log("Restoring tooth colors for tooth:", toothPaintData); // 调试输出
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) {
     console.warn('No color attribute found on geometry.');
@@ -522,7 +525,6 @@ function restoreToothColors(toothId) {
 }
 
 function restoreToothWithNewColor(toothId) {
-  console.log("Restoring tooth colors for:", toothPaintData); // 调试输出
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) {
     console.warn('No color attribute found on geometry.');

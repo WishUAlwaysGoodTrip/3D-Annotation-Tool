@@ -14,24 +14,13 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
   const [editedAnnotation, setEditedAnnotation] = useState(''); // 保存编辑中的注释名称
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
-  const [teeth, setTeeth] = useState([
-    { id: 1, color: '#ffffff', annotations: [] },
-    { id: 2, color: '#ffffff', annotations: [] },
-    { id: 3, color: '#ffffff', annotations: [] },
-    { id: 4, color: '#ffffff', annotations: [] },
-    { id: 5, color: '#ffffff', annotations: [] },
-    { id: 6, color: '#ffffff', annotations: [] },
-    { id: 7, color: '#ffffff', annotations: [] },
-    { id: 8, color: '#ffffff', annotations: [] },
-    { id: 9, color: '#ffffff', annotations: [] },
-    { id: 10, color: '#ffffff', annotations: [] },
-    { id: 11, color: '#ffffff', annotations: [] },
-    { id: 12, color: '#ffffff', annotations: [] },
-    { id: 13, color: '#ffffff', annotations: [] },
-    { id: 14, color: '#ffffff', annotations: [] },
-    { id: 15, color: '#800080', annotations: [] }, // Pre-set color example
-    { id: 16, color: '#555555', annotations: [] }  // Pre-set color example
-  ]);
+  const [teeth, setTeeth] = useState(() =>
+    Array.from({ length: 16 }, (_, i) => ({
+      id: i + 1,
+      color: '#ffffff', // 默认颜色
+      annotations: [],
+    }))
+  );
 
   useEffect(() => {
     const handleWindowResize = () => {
