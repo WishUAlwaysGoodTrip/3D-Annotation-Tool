@@ -41,7 +41,7 @@ let selectedToothId; // 当前选择的牙齿 ID
 let selectedPoint;
 let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
-let selectedFaces = [];
+let selectedFaceLines = [];
 let previousSelectedFace = null;
 let previousToothId = null;
 let previousToothColor = null;
@@ -151,11 +151,13 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
         selectedToothId = toothId;
         updatePaintColor(toothColor); // 更新绘制颜色
         restoreToothColors(selectedToothId); // 恢复涂色
+        restoreLineSelections(selectedToothId)
         console.log("ID changed, restoring tooth color:", toothColor, selectedToothId);
       } else if (previousToothColor !== toothColor) {
         // 如果颜色变化但 ID 未变化，执行新的颜色更新函数
         updatePaintColor(toothColor); // 更新绘制颜色
         restoreToothWithNewColor(toothId); // 用新的颜色对牙齿进行着色
+        restoreLineSelections(toothId)
         console.log("Color changed, updating tooth with new color:", toothColor, toothId);
       }
   
@@ -631,7 +633,6 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 2]
       );
     });
-
     colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
   }, 0);
 }
@@ -801,8 +802,33 @@ function colorFace(faceIndex) {
 
   colorAttr.needsUpdate = true;
 
-  if (!selectedFaces.includes(faceIndex)) {
-    selectedFaces.push(faceIndex);
+  if (!(selectedFaceLines[selectedToothId] instanceof Set)) {
+    selectedFaceLines[selectedToothId] = new Set();
+  }
+  selectedFaceLines[selectedToothId].add({faceIndex,color: { r: paintColor.r, g: paintColor.g, b: paintColor.b }});
+}
+
+function restoreLineSelections(toothId) {
+  const colorAttr = targetMesh.geometry.getAttribute('color');
+  if (!colorAttr) return;
+
+  // 将所有顶点颜色重置为白色
+  //for (let i = 0; i < colorAttr.count; i++) {
+  //  colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+  //}
+
+  if (selectedFaceLines[toothId]) {
+    selectedFaceLines[toothId].forEach(({faceIndex,color}) => {
+      const indices = targetMesh.geometry.index;
+      const i0 = indices.getX(faceIndex * 3);
+      const i1 = indices.getX(faceIndex * 3 + 1);
+      const i2 = indices.getX(faceIndex * 3 + 2);
+
+      colorAttr.setXYZ(i0, color.r * 255, color.g * 255, color.b * 255);
+      colorAttr.setXYZ(i1, color.r * 255, color.g * 255, color.b * 255);
+      colorAttr.setXYZ(i2, color.r * 255, color.g * 255, color.b * 255);
+    });
+    colorAttr.needsUpdate = true; // 更新颜色
   }
 }
 
