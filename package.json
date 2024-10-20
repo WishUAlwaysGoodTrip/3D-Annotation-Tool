@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=development concurrently \"vite\" \"electron .\"",
     "electron": "cross-env NODE_ENV=development vite build && electron .",
-    "electron-build": "cross-env NODE_ENV=production electron ."
+    "electron-build": "cross-env NODE_ENV=production vite build && electron .",
+    "start-electron": "cross-env NODE_ENV=production electron ."
   },
   "dependencies": {
     "concurrently": "^8.2.2",

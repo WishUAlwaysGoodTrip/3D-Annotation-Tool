@@ -822,11 +822,6 @@ function restoreLineSelections(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
 
-  // 将所有顶点颜色重置为白色
-  //for (let i = 0; i < colorAttr.count; i++) {
-  //  colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
-  //}
-
   if (selectedFaceLines[toothId]) {
     selectedFaceLines[toothId].forEach(({faceIndex,color}) => {
       const indices = targetMesh.geometry.index;
