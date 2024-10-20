@@ -632,10 +632,20 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 1],
         originalColors[idx * 3 + 2]
       );
+
+      if (toothPaintData[selectedToothId]) {
+        toothPaintData[selectedToothId] = toothPaintData[selectedToothId].filter(item => item.index !== idx);
+      }
+
+      if (selectedFaceLines[selectedToothId]) {
+        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
+      }
     });
     colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
   }, 0);
 }
+
+
 
 
 // 创建指示器圆形
