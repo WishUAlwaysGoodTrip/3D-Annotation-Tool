@@ -415,6 +415,11 @@ ipcMain.on('electron-store-set', (event, key, value) => {
   event.returnValue = true;
 });
 
+ipcMain.on('get-dirname', (event) => {
+  event.returnValue = __dirname;  
+});
+
+
 ipcMain.on('electron-store-delete', (event, key) => {
   store.delete(key);
   event.returnValue = true;

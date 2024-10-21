@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the styles
+import { ipcRenderer } from 'electron';
+import fs from 'fs';
+import path from 'path';
 
 const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}) => {
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
+  const [dirname, setDirname] = useState('');
+  const [filename, setFilename] = useState('');
   const [listHeight, setListHeight] = useState(window.innerHeight * 0.55); // 默认高度
   const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
@@ -14,13 +19,88 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
   const [editedAnnotation, setEditedAnnotation] = useState(''); // 保存编辑中的注释名称
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
-  const [teeth, setTeeth] = useState(() =>
-    Array.from({ length: 16 }, (_, i) => ({
-      id: i + 1,
-      color: '#ffffff', // 默认颜色
-      annotations: [],
-    }))
-  );
+  const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // 用于存储高亮的牙齿ID
+  const [teeth, setTeeth] = useState([
+    { id: 1, color: '#ffffff', annotations: [] },
+    { id: 2, color: '#ffffff', annotations: [] },
+    { id: 3, color: '#ffffff', annotations: [] },
+    { id: 4, color: '#ffffff', annotations: [] },
+    { id: 5, color: '#ffffff', annotations: [] },
+    { id: 6, color: '#ffffff', annotations: [] },
+    { id: 7, color: '#ffffff', annotations: [] },
+    { id: 8, color: '#ffffff', annotations: [] },
+    { id: 9, color: '#ffffff', annotations: [] },
+    { id: 10, color: '#ffffff', annotations: [] },
+    { id: 11, color: '#ffffff', annotations: [] },
+    { id: 12, color: '#ffffff', annotations: [] },
+    { id: 13, color: '#ffffff', annotations: [] },
+    { id: 14, color: '#ffffff', annotations: [] },
+    { id: 15, color: '#ffffff', annotations: [] }, 
+    { id: 16, color: '#ffffff', annotations: [] }  
+  ]);
+
+  useEffect(() => {
+    const handleFileSelected = (event, fileData) => {
+      setFilename(fileData.name)
+    };
+
+    // 监听 'file-selected' 事件
+    ipcRenderer.on('file-selected', handleFileSelected);
+
+    // 在组件卸载时移除监听
+    return () => {
+      ipcRenderer.removeListener('file-selected', handleFileSelected);
+    };
+  }, []);
+
+
+  useEffect(() => {
+    const dir = ipcRenderer.sendSync('get-dirname');  // 同步请求 __dirname
+    setDirname(dir);  // 设置状态以存储 dirname
+  }, []);
+
+
+  useEffect(() => {
+    // 读取 JSON 文件并检查牙齿是否存在
+    const jsonFilePath = path.join(dirname, 'public', 'datasettest', filename.replace(".stl",".json"));
+    console.log(jsonFilePath)
+    // 读取 JSON 文件
+    fs.readFile(jsonFilePath, 'utf-8', (err, data) => {
+      if (err) {
+        console.error('Error reading JSON file:', err);
+        return;
+      }
+
+      const annotations = JSON.parse(data);
+      setAnnotations(getAnnotationsFromData(annotations));
+      checkTeethExistence(annotations); // 检查牙齿是否存在
+    });
+  }, [filename]);
+
+  const checkTeethExistence = (data) => {
+    const existingTeeth = new Set();
+
+    // Check if toothPaintData exists in the input data
+    if (data.toothPaintData) {
+      // 遍历 toothPaintData，检查每个牙齿是否有颜色数据
+      for (const toothId in data.toothPaintData) {
+        console.log(toothId)
+        if (data.toothPaintData.hasOwnProperty(toothId)) {
+          const paintEntries = data.toothPaintData[toothId];
+          
+          // Check if there are any entries for this tooth ID
+          if (Array.isArray(paintEntries) && paintEntries.length > 0) {
+            existingTeeth.add(toothId); // 将存在的牙齿 ID 添加到集合中
+          }
+        }
+      }
+    }
+      setHighlightedTeeth(existingTeeth); // 更新高亮牙齿的状态
+    };
+
+    useEffect(() => {
+      console.log('Updated highlightedTeeth:', highlightedTeeth);
+    }, [highlightedTeeth]);
 
   useEffect(() => {
     const handleWindowResize = () => {
@@ -38,6 +118,20 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
     useEffect(() => {
       onTeethDataChange(teeth);
     }, [teeth]);
+
+
+    const getAnnotationsFromData = (data) => {
+      const newAnnotations = Object.keys(data.annotationColors).map(key => ({
+        name: key,
+        color: data.annotationColors[key].color || '#af2828' // Default color if not specified
+      }));
+  
+      // Add "ADD..." annotation at the end
+      newAnnotations.push({ name: 'ADD...', color: '#af2828' });
+      return newAnnotations;
+    };
+
+
 
   useEffect(() => {
     if (annotations.length === 1 && annotations[0].name === 'ADD...') {
@@ -224,21 +318,27 @@ const handleAddAnnotation = (e) => {
         </ul>
       )}
       <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
-        {teeth.map((tooth) => (
+        {teeth.map((tooth) => {
+          console.log(highlightedTeeth)
+          console.log(tooth.id)
+          return(
           <div 
             key={tooth.id} 
-            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`}  // 添加 selected 类
+            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''} `}  // 添加 selected 类
             onClick={() => handleToothAction(tooth.id)}  // 只传递牙齿ID，不传递新颜色
+            
           >
-            <span>Tooth {tooth.id}</span>
+            <span style={{ color: highlightedTeeth.has(tooth.id.toString()) ? 'green' : '' }}>Tooth {tooth.id}</span>
             <input
               type="color"
               value={tooth.color}
               onChange={(e) => handleToothAction(tooth.id, e.target.value)}  // 传递牙齿ID和新的颜色
               className="teeth-color" 
+
             />
           </div>
-        ))}
+          );
+      })}
       </div>
     </div>
   );
