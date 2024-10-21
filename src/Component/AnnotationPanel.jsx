@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the styles
+import Store from 'electron-store';
+import path from 'path';
 
-const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}) => {
+let annotationStore
+
+function createAnnotationStore(filename) {
+  const filenameWithoutExtension = path.basename(filename, '.stl');
+  return new Store({
+    name: filenameWithoutExtension,
+    cwd: path.join(process.cwd(), 'public', 'datasettest'),
+  });
+}
+
+const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange, file}) => {
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
@@ -21,6 +33,55 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
       annotations: [],
     }))
   );
+
+  useEffect(() => {
+    console.log('useEffect triggered');
+    if (file) {
+      // 创建 annotationStore 实例
+      annotationStore = createAnnotationStore(file.name);
+      if (annotationStore) {
+        // 获取存储中的 toothPaintData
+        const storedToothPaintData = annotationStore.get('toothPaintData') || {};
+        console.log('Stored Tooth Paint Data:', storedToothPaintData);
+  
+        // 获取存储中的 annotations
+        const storedAnnotations = Object.values(storedToothPaintData).flatMap(
+          (tooth) => tooth.annotations || []
+        );
+  
+        // 合并存储中的 annotations，避免重复，并确保初始值 'ADD...' 不被包含在合并中
+        const combinedAnnotations = [...new Set(storedAnnotations.filter(
+          (storedAnnotation) => storedAnnotation !== 'ADD...'
+        ))];
+  
+        setAnnotations([...combinedAnnotations.map((annotation) => ({
+          name: annotation,
+          color: '#af2828', // 默认颜色，如果需要可从其他地方获取颜色信息
+        })), { name: 'ADD...', color: '#af2828' }]);
+  
+        // 格式化 teeth 数据
+        const formattedTeethData = Array.from({ length: 16 }, (_, i) => {
+          const toothId = i + 1;
+          const storedToothData = storedToothPaintData[toothId] || {};
+          
+          return {
+            id: toothId,
+            color: storedToothData.paintData?.[0]?.color 
+              ? `#${((1 << 24) + (storedToothData.paintData[0].color.r << 16) + (storedToothData.paintData[0].color.g << 8) + storedToothData.paintData[0].color.b).toString(16).slice(1)}` 
+              : '#ffffff', // 从 paintData 中取第一个颜色作为默认颜色，格式化为 #RRGGBB
+            annotations: storedToothData.annotations || [] // 如果存储中没有 annotations，使用空数组
+          };
+        });
+  
+        // 更新 teeth 状态
+        setTeeth(formattedTeethData);
+        console.log('Formatted Teeth Data:', formattedTeethData);
+      }
+    }
+  }, [file]);
+  
+  
+  
 
   useEffect(() => {
     const handleWindowResize = () => {

@@ -78,6 +78,7 @@ const App = () => {
       />
 
       <AnnotationPanel 
+        file={uploadedFile} 
         onColorChange={handleColorChange} 
         onToothColorChange={handleToothColorChange}  // 传递牙齿颜色变化处理函数
         onTeethDataChange={handleTeethDataChange}

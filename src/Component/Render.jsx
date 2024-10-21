@@ -41,7 +41,7 @@ let selectedToothId; // 当前选择的牙齿 ID
 let selectedPoint;
 let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
-let selectedFaceLines = [];
+let selectedFaces = [];
 let previousSelectedFace = null;
 let previousToothId = null;
 let previousToothColor = null;
@@ -124,12 +124,25 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
       if (annotationStore) {
         annotationColors = annotationStore.get('annotationColors') || {};
         toothPaintData = annotationStore.get('toothPaintData') || {};
+  
+        // 确保 `toothPaintData` 符合新的结构
+        Object.keys(toothPaintData).forEach((toothId) => {
+          const data = toothPaintData[toothId];
+          if (!data.annotations) {
+            data.annotations = [];
+          }
+          if (!data.paintData) {
+            data.paintData = [];
+          }
+        });
+  
         loadModel(file); // 加载传入的 STL 文件
       } else {
         console.warn('Failed to create annotationStore');
       }
     }
   }, [file]);
+  
 
 
   useEffect(() => {
@@ -154,13 +167,11 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
         selectedToothId = toothId;
         updatePaintColor(toothColor); // 更新绘制颜色
         restoreToothColors(selectedToothId); // 恢复涂色
-        restoreLineSelections(selectedToothId)
         console.log("ID changed, restoring tooth color:", toothColor, selectedToothId);
       } else if (previousToothColor !== toothColor) {
         // 如果颜色变化但 ID 未变化，执行新的颜色更新函数
         updatePaintColor(toothColor); // 更新绘制颜色
         restoreToothWithNewColor(toothId); // 用新的颜色对牙齿进行着色
-        restoreLineSelections(toothId)
         console.log("Color changed, updating tooth with new color:", toothColor, toothId);
       }
   
@@ -170,23 +181,49 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
     }
   }, [toothColor, toothId]); // 当 toothColor 或 toothId 变化时调用
 
+  useEffect(() => {
+    if (teethData && teethData.length > 0) {
+      // 遍历 teethData，将 annotations 合并到 toothPaintData 中
+      teethData.forEach((tooth) => {
+        const { id, annotations } = tooth;
+  
+        // 如果 `toothPaintData` 中没有该牙齿的数据，初始化为空对象
+        if (!toothPaintData[id]) {
+          toothPaintData[id] = {
+            annotations: [],
+            paintData: []
+          };
+        }
+  
+        // 提取 annotations 中的名称
+        const annotationNames = annotations.map(annotation => annotation.name);
+  
+        // 使用 Set 去重，将 annotations 数组中的名称与 toothPaintData 中已有的名称合并
+        const existingAnnotationNames = new Set(toothPaintData[id].annotations);
+        annotationNames.forEach((name) => existingAnnotationNames.add(name));
+  
+        // 更新 toothPaintData 中的 annotations 为去重后的名称数组
+        toothPaintData[id].annotations = Array.from(existingAnnotationNames);
+      });
+    }
+  }, [teethData]); // 当 teethData 变化时调用
+  
   
 
   useEffect(() => {
     // 保存数据事件处理函数
     function handleSaveData() {
+      // 保存数据到持久化存储
       if (annotationStore) {
-        annotationStore.set('annotationColors', annotationColors);
-        annotationStore.set('toothPaintData', toothPaintData);
+        annotationStore.set('toothPaintData', toothPaintData); // 保存新的数据结构
   
         console.log('Annotation and tooth paint data saved.');
-        // 通知主进程保存完成
         ipcRenderer.send('save-complete');
       } else {
         console.warn('annotationStore is not defined. Data cannot be saved.');
       }
     }
-  
+
     // 监听 save-data 信号
     ipcRenderer.on('save-data', handleSaveData);
   
@@ -194,7 +231,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
     return () => {
       ipcRenderer.removeListener('save-data', handleSaveData);
     };
-  }, [annotationStore, annotationColors, toothPaintData]);
+  }, [annotationStore, toothPaintData]);
   
   // 使用 useEffect 监听 cursorOpacity 并调用 debounce 函数
   useEffect(() => {
@@ -351,7 +388,7 @@ function loadModel(file) {
     if (annotationColors) {
       Object.keys(annotationColors).forEach((annotationName) => {
         // restoreAnnotationColors(annotationName);
-        restoreAnnotation(annotationName,teethData); // 恢复注释的颜色
+        // restoreAnnotation(annotationName,teethData); // 恢复注释的颜色
       });
     }
 
@@ -396,20 +433,24 @@ function paintIntersectedArea(intersect, annotationName) {
   if (!(annotationColors[annotationName] instanceof Set)) {
     annotationColors[annotationName] = new Set();
   }
-  if (!toothPaintData[selectedToothId]) {
-    toothPaintData[selectedToothId] = [];
-  }
 
+  if (!toothPaintData[selectedToothId]) {
+    toothPaintData[selectedToothId] = {
+      annotations: [],
+      paintData: []
+    };
+  }
+  
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-
+  
     annotationColors[annotationName].add(index);
-    toothPaintData[selectedToothId].push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
+    toothPaintData[selectedToothId].paintData.push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
   }
   
-
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  
 }
 
 
@@ -460,12 +501,12 @@ function restoreAnnotation(annotationName,teethData) {
     const toothData = teethData.find(tooth => tooth.id == toothId);
     
     if (toothData && toothData.annotations.some(annotation => annotation.name === annotationName)) {
-      if (toothPaintData[toothId]) {
-        toothPaintData[toothId].forEach(({ index, color }) => {
+      if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+        toothPaintData[toothId].paintData.forEach(({ index, color }) => {
           colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
         });
       }
-    }
+    }    
   });
 
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
@@ -504,27 +545,27 @@ function restoreAnnotation(annotationName,teethData) {
 
 
 function restoreToothColors(toothId) {
-  console.log("Restoring tooth colors for tooth:", toothPaintData); // 调试输出
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) {
     console.warn('No color attribute found on geometry.');
     return;
   }
-
+  console.log("Restoring tooth colors for:", toothId); // 调试输出
   // 清除当前颜色，恢复到白色
   for (let i = 0; i < colorAttr.count; i++) {
     colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
   }
 
   // 如果存在与当前牙齿 ID 相关的涂色数据，则恢复这些数据
-  if (toothPaintData[toothId]) {
-    toothPaintData[toothId].forEach(({ index, color }) => {
+  if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+    toothPaintData[toothId].paintData.forEach(({ index, color }) => {
       colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
     });
   }
 
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
+
 
 function restoreToothWithNewColor(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
@@ -537,16 +578,19 @@ function restoreToothWithNewColor(toothId) {
   for (let i = 0; i < colorAttr.count; i++) {
     colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
   }
+
   console.log("Restoring tooth colors for:", paintColor); // 调试输出
+
   // 如果存在与当前牙齿 ID 相关的涂色数据，则恢复这些数据
-  if (toothPaintData[toothId]) {
-    toothPaintData[toothId].forEach(({ index }) => {
-      colorAttr.setXYZ(index, paintColor.r*255 , paintColor.g*255 , paintColor.b*255 );
+  if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+    toothPaintData[toothId].paintData.forEach(({ index }) => {
+      colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
     });
   }
 
+  // 更新 `paintData` 中的颜色信息
   if (toothPaintData[toothId]) {
-    toothPaintData[toothId] = toothPaintData[toothId].map(({ index }) => ({
+    toothPaintData[toothId].paintData = toothPaintData[toothId].paintData.map(({ index }) => ({
       index: index,
       color: { r: paintColor.r, g: paintColor.g, b: paintColor.b }
     }));
@@ -554,6 +598,7 @@ function restoreToothWithNewColor(toothId) {
 
   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
+
 
 // 更新绘制颜色
 function updatePaintColor(color) {
@@ -625,6 +670,7 @@ function eraseIntersectedArea(intersect) {
   const originalColors = targetMesh.geometry.userData.originalColors;
 
   // 使用异步批量更新原始颜色
+  // 使用异步批量更新原始颜色
   setTimeout(() => {
     indices.forEach((index) => {
       const idx = targetMesh.geometry.index.getX(index);
@@ -635,19 +681,18 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 2]
       );
 
-      if (toothPaintData[selectedToothId]) {
-        toothPaintData[selectedToothId] = toothPaintData[selectedToothId].filter(item => item.index !== idx);
-      }
-
-      if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
+      // 移除 `paintData` 中对应的 index
+      if (toothPaintData[selectedToothId] && Array.isArray(toothPaintData[selectedToothId].paintData)) {
+        toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
+          (paint) => paint.index !== idx
+        );
       }
     });
+
     colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
   }, 0);
+
 }
-
-
 
 
 // 创建指示器圆形
@@ -814,28 +859,8 @@ function colorFace(faceIndex) {
 
   colorAttr.needsUpdate = true;
 
-  if (!(selectedFaceLines[selectedToothId] instanceof Set)) {
-    selectedFaceLines[selectedToothId] = new Set();
-  }
-  selectedFaceLines[selectedToothId].add({faceIndex,color: { r: paintColor.r, g: paintColor.g, b: paintColor.b }});
-}
-
-function restoreLineSelections(toothId) {
-  const colorAttr = targetMesh.geometry.getAttribute('color');
-  if (!colorAttr) return;
-
-  if (selectedFaceLines[toothId]) {
-    selectedFaceLines[toothId].forEach(({faceIndex,color}) => {
-      const indices = targetMesh.geometry.index;
-      const i0 = indices.getX(faceIndex * 3);
-      const i1 = indices.getX(faceIndex * 3 + 1);
-      const i2 = indices.getX(faceIndex * 3 + 2);
-
-      colorAttr.setXYZ(i0, color.r * 255, color.g * 255, color.b * 255);
-      colorAttr.setXYZ(i1, color.r * 255, color.g * 255, color.b * 255);
-      colorAttr.setXYZ(i2, color.r * 255, color.g * 255, color.b * 255);
-    });
-    colorAttr.needsUpdate = true; // 更新颜色
+  if (!selectedFaces.includes(faceIndex)) {
+    selectedFaces.push(faceIndex);
   }
 }
 
