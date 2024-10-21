@@ -17,6 +17,8 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
+  const [dirname, setDirname] = useState('');
+  const [filename, setFilename] = useState('');
   const [listHeight, setListHeight] = useState(window.innerHeight * 0.55); // 默认高度
   const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
@@ -99,6 +101,20 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
     useEffect(() => {
       onTeethDataChange(teeth);
     }, [teeth]);
+
+
+    const getAnnotationsFromData = (data) => {
+      const newAnnotations = Object.keys(data.annotationColors).map(key => ({
+        name: key,
+        color: data.annotationColors[key].color || '#af2828' // Default color if not specified
+      }));
+  
+      // Add "ADD..." annotation at the end
+      newAnnotations.push({ name: 'ADD...', color: '#af2828' });
+      return newAnnotations;
+    };
+
+
 
   useEffect(() => {
     if (annotations.length === 1 && annotations[0].name === 'ADD...') {
@@ -285,21 +301,27 @@ const handleAddAnnotation = (e) => {
         </ul>
       )}
       <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
-        {teeth.map((tooth) => (
+        {teeth.map((tooth) => {
+          console.log(highlightedTeeth)
+          console.log(tooth.id)
+          return(
           <div 
             key={tooth.id} 
-            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`}  // 添加 selected 类
+            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''} `}  // 添加 selected 类
             onClick={() => handleToothAction(tooth.id)}  // 只传递牙齿ID，不传递新颜色
+            
           >
-            <span>Tooth {tooth.id}</span>
+            <span style={{ color: highlightedTeeth.has(tooth.id.toString()) ? 'green' : '' }}>Tooth {tooth.id}</span>
             <input
               type="color"
               value={tooth.color}
               onChange={(e) => handleToothAction(tooth.id, e.target.value)}  // 传递牙齿ID和新的颜色
               className="teeth-color" 
+
             />
           </div>
-        ))}
+          );
+      })}
       </div>
     </div>
   );
