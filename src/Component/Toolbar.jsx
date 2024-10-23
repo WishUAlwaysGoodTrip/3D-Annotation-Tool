@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react'; 
 import ToolbarButton from './ToolbarButton';
 import '../Toolbar.css'
 import useToolbarStore from '../stores/useToolbarStore.js'
-import Draggable from 'react-draggable';
 
 const Toolbar = () => {
   const { setMode, activeButton, setActiveButton } = useToolbarStore();
@@ -14,7 +12,6 @@ const Toolbar = () => {
   };
 
   return (
-    <Draggable>
       <div id="toolbar">
         {/* Button 1 */}
         <ToolbarButton
@@ -74,7 +71,6 @@ const Toolbar = () => {
            id="button5"
          />
       </div>
-    </Draggable>
   );
 };
 

@@ -974,11 +974,19 @@ function updateControls() {
     controls.enableRotate = true; // 允许旋转
     controls.enableZoom = true;   // 允许缩放
     controls.enablePan = true;    // 允许平移
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN
+    }
     console.log("render drag")
   } else {
-    controls.enableRotate = false; // 禁止旋转
+    controls.enableRotate = true; // 禁止旋转
     controls.enableZoom = false;   // 禁止缩放
     controls.enablePan = false;    // 禁止平移
+    controls.mouseButtons = {
+      MIDDLE: THREE.MOUSE.ROTATE,
+    }
   }
 }
 
