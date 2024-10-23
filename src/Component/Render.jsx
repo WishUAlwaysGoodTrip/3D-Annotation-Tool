@@ -983,7 +983,7 @@ function updateControls() {
   } else {
     controls.enableRotate = true; // 禁止旋转
     controls.enableZoom = false;   // 禁止缩放
-    controls.enablePan = false;    // 禁止平移
+    controls.enablePan = true;    // 禁止平移
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
     }
