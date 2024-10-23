@@ -42,6 +42,7 @@ let selectedPoint;
 let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
 let selectedFaces = [];
+let selectedFaceLines = [];
 let previousSelectedFace = null;
 let previousToothId = null;
 let previousToothColor = null;
@@ -670,7 +671,6 @@ function eraseIntersectedArea(intersect) {
   const originalColors = targetMesh.geometry.userData.originalColors;
 
   // 使用异步批量更新原始颜色
-  // 使用异步批量更新原始颜色
   setTimeout(() => {
     indices.forEach((index) => {
       const idx = targetMesh.geometry.index.getX(index);
@@ -686,6 +686,9 @@ function eraseIntersectedArea(intersect) {
         toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
           (paint) => paint.index !== idx
         );
+        }
+      if (selectedFaceLines[selectedToothId]) {
+        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
       }
     });
 
@@ -783,6 +786,25 @@ function onPointerMove(e) {
 function onPointerDown(e) {
   if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = true;
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    // 检查是否点击在模型上
+    if (targetMesh) {
+      const intersects = raycaster.intersectObject(targetMesh, true);
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        if (threeMode === 'painting') {
+          paintIntersectedArea(intersect, anotationlistname); // 直接涂色
+        } else if (threeMode === 'erasing') {
+          eraseIntersectedArea(intersect); // 直接擦除
+        }
+      }
+    }
   } else if(threeMode === 'point'&& e.button === 0){
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
