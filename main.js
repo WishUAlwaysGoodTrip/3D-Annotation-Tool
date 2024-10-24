@@ -45,7 +45,7 @@ function createWindow() {
 }
 
 function loadDefaultFile() {
-  const defaultFilePath = path.join(__dirname, 'public', 'datasettest', 'SuperMario02.stl');
+  const defaultFilePath = path.join(__dirname, 'public', 'datasettest', 'upper_default.stl');
 
   // 检查文件是否存在
   if (fs.existsSync(defaultFilePath)) {
@@ -212,7 +212,6 @@ function createMenu() {
             win.webContents.toggleDevTools();
           },
         },
-        { label: 'New Project', click() { console.log('New Project'); } },
         { label: 'Open Folder',
           accelerator: 'CmdOrCtrl+O',
           click() {
@@ -318,18 +317,6 @@ function createMenu() {
           submenu: getRecentFilesSubmenu() // 动态获取最近文件子菜单
         },
         { label: 'Export…', click() { console.log('Export…'); } }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' }
       ]
     },
     {
