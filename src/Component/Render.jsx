@@ -719,9 +719,9 @@ function createCursorCircle(cursorShape) {
     geometry = new THREE.PlaneGeometry(10, 10);  // Rectangle geometry
   }
 
-  cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+  cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5, depthTest:false });
   cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
-
+  cursorCircle.renderOrder =1;
   cursorCircle.position.z = 1; // 初始位置
   scene.add(cursorCircle);
 }
