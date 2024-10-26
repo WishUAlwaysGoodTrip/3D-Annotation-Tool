@@ -3,8 +3,8 @@ import '../Toolbar.css'
 import useToolbarStore from '../stores/useToolbarStore.js'
 
 const Toolbar = () => {
-  const { setMode, activeButton, setActiveButton } = useToolbarStore();
-  const {isPanelVisible, setIsPanelVisible} = useToolbarStore();  
+  const { setMode, activeButton, setActiveButton, wireFrame} = useToolbarStore();
+  const {isPanelVisible, setIsPanelVisible, changeWireFrame} = useToolbarStore();
 
   const handleButtonClick = (newMode) => {
     setMode(newMode);
@@ -55,6 +55,7 @@ const Toolbar = () => {
           onClick={() => {
             handleButtonClick('dragging');
             setActiveButton("button4");
+            changeWireFrame(wireFrame);
           }}
           id="button4"
         />

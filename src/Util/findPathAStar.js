@@ -94,12 +94,14 @@ export function buildFaceAdjacencyMap(geometry) {
         adjacencyMap[faceIndex] = Array.from(adjacentFaces);
 
         // 调试输出，打印前几个面的相邻关系
-        if (faceIndex < 10) {
+        /*if (faceIndex < 10) {
             console.log(`Face ${faceIndex} has adjacent faces: ${Array.from(adjacentFaces)}`);
             if (adjacencyMap[faceIndex].length === 0) {
                 console.warn(`Face ${faceIndex} has no adjacent faces!`);
             }
         }
+
+         */
     }
 
     return adjacencyMap;

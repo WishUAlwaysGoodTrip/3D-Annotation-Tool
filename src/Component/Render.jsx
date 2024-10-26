@@ -48,10 +48,11 @@ let previousToothId = null;
 let previousToothColor = null;
 let adjacencyMap = null;
 let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
+let edgeLines = null; //edge lines in paint mode
 
 
 const Render = ({file, brushColor, annotationName, toothColor, toothId, teethData}) => {
-  const { mode } = useToolbarStore();
+  const { mode, wireFrame } = useToolbarStore();
   const { cursorOpacity, cursorColor, cursorSize,  cursorShape } = useToolbarStore();
 
   const updateOpacity = debounce((opacity) => {
@@ -263,6 +264,13 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
     updateColor(cursorColor);
     updateSize(cursorSize);
 }, [cursorShape]);  // 监听 cursorShape 变化
+
+  useEffect(() => {
+    if(targetMesh){
+      updateEdgeLines();
+    }
+  }, [wireFrame]);
+
 
   return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
 };
@@ -816,7 +824,6 @@ function onPointerDown(e) {
     // 检查是否点击在模型上
     if (targetMesh) {
       const intersects = raycaster.intersectObject(targetMesh, true);
-
       if (intersects.length > 0) {
         const intersect = intersects[0];
         if (!e.ctrlKey) {
@@ -933,13 +940,60 @@ function createHighlightPoint(intersect) {
   const nearestVertexPosition = findNearestVertex(intersect);
 
   // Create a new highlight point at the nearest vertex
-  const geometry = new THREE.SphereGeometry(0.3, 16, 16); // Adjust size as needed
+  const geometry = new THREE.SphereGeometry(0.25, 16, 16); // Adjust size as needed
   const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Adjust color as needed
   selectedPoint = new THREE.Mesh(geometry, material);
   selectedPoint.position.copy(nearestVertexPosition);
   scene.add(selectedPoint);
 
   selectedPoints.push(selectedPoint);
+}
+
+// Function to add or remove edge lines based on the current mode
+function updateEdgeLines() {
+  console.log(threeMode)
+  if (!edgeLines) {
+    // draw edges on the mesh
+    edgeLines = addEdgesToScene(targetMesh);
+  } else if (edgeLines) {
+    // Remove edge lines
+    targetMesh.remove(edgeLines); // Remove the edge lines from the mesh
+    edgeLines.geometry.dispose(); // Dispose of geometry to free memory
+    edgeLines.material.dispose(); // Dispose of material
+    edgeLines = null; // Reset variable
+  }
+}
+
+// Function to create edges for the scene
+function addEdgesToScene() {
+  const geometry = targetMesh.geometry;
+  const positions = geometry.attributes.position;
+  const edgesVertices = []; // Array to store all edges
+
+  // Loop through each face to add edges
+  for (let i = 0; i < positions.count; i += 3) {
+    // Get the indices for each vertex in the face
+    const v1 = new THREE.Vector3().fromBufferAttribute(positions, i);
+    const v2 = new THREE.Vector3().fromBufferAttribute(positions, i + 1);
+    const v3 = new THREE.Vector3().fromBufferAttribute(positions, i + 2);
+
+    // Add lines for each edge of the triangle
+    edgesVertices.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+    edgesVertices.push(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z);
+    edgesVertices.push(v3.x, v3.y, v3.z, v1.x, v1.y, v1.z);
+  }
+
+  // Create a BufferGeometry for edges
+  const edgesGeometry = new THREE.BufferGeometry();
+  edgesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(edgesVertices, 3));
+
+  // Create material and line segments
+  const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+  const completeEdges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+
+  completeEdges.raycast = () => {}; // Disable raycasting on edges
+  targetMesh.add(completeEdges); // Add edges to the mesh
+  return completeEdges;
 }
 
 // function addGUI() {
