@@ -3,8 +3,19 @@ import '../AnnotationPanel.css'; // Assuming you'll create a CSS file for the st
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import Store from 'electron-store';
 
-const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}) => {
+let annotationStore
+function createAnnotationStore(filename) {
+  const filenameWithoutExtension = path.basename(filename, '.stl');
+  return new Store({
+    name: filenameWithoutExtension,
+    cwd: path.join(process.cwd(), 'public', 'datasettest'),
+  });
+}
+const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange, file}) => {
+
+  const [isPanelVisible, setIsPanelVisible] = useState(true);
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
@@ -18,9 +29,6 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
   const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // 用于存储高亮的牙齿ID
-  const [existingTooth, setExistingTooth] = useState(new Set());
-  const [dirname, setDirname] = useState('');
-  const [filename, setFilename] = useState('');
   const [isEditing, setIsEditing] = useState(false); 
   const [teeth, setTeeth] = useState(() =>
     Array.from({ length: 16 }, (_, i) => ({
@@ -30,93 +38,118 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange}
     }))
   );
 
-  useEffect(() => {
-    const handleFileSelected = (event, fileData) => {
-      setFilename(fileData.name)
-    };
-    // 监听 'file-selected' 事件
-    ipcRenderer.on('file-selected', handleFileSelected);
-    // 在组件卸载时移除监听
-    return () => {
-      ipcRenderer.removeListener('file-selected', handleFileSelected);
-    };
-  }, []);
+  const togglePanelVisibility = () => {
+    setIsPanelVisible(!isPanelVisible);
+  };
 
   useEffect(() => {
-    const dir = ipcRenderer.sendSync('get-dirname');  // 同步请求 __dirname
-    setDirname(dir);  // 设置状态以存储 dirname
-  }, []);
-
-  useEffect(() => {
-    // 读取 JSON 文件并检查牙齿是否存在
-    const jsonFilePath = path.join(dirname, 'public', 'datasettest', filename.slice(0, -4) + '.json');
-    console.log(jsonFilePath)
-    // 读取 JSON 文件
-    fs.readFile(jsonFilePath, 'utf-8', (err, data) => {
-      if (err) {
-        // console.error('Error reading JSON file:', err);
-        return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault(); // 防止默认的 Tab 行为
+        setSelectedToothId((prevId) => {
+          const nextId = prevId === null ? 1 : (prevId % teeth.length) + 1; // 循环选择
+          handleToothAction(nextId); // 触发点击事件
+          return nextId;
+        });
       }
-      const annotations = JSON.parse(data);
-      setAnnotations(getAnnotationsFromData(annotations));
-      checkTeethExistence(annotations); // 检查牙齿是否存在
-    });
-  }, [filename]);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [teeth.length]);
+
+
+  useEffect(() => {
+    console.log('useEffect triggered');
+    if (file) {
+      // 创建 annotationStore 实例
+      annotationStore = createAnnotationStore(file.name);
+      if (annotationStore) {
+        // 获取存储中的 toothPaintData
+        const storedToothPaintData = annotationStore.get('toothPaintData') || {};
+        console.log('Stored Tooth Paint Data:', storedToothPaintData);
+  
+        // 获取存储中的 annotations
+        const storedAnnotations = Object.values(storedToothPaintData).flatMap(
+          (tooth) => tooth.annotations || []
+        );
+  
+        // 合并存储中的 annotations，避免重复，并确保初始值 'ADD...' 不被包含在合并中
+        const combinedAnnotations = [...new Set(storedAnnotations.filter(
+          (storedAnnotation) => storedAnnotation !== 'ADD...' && storedAnnotation !== null
+        ))];
+
+        setAnnotations([...combinedAnnotations.map((annotation) => ({
+          name: annotation,
+          color: '#af2828', // 默认颜色，如果需要可从其他地方获取颜色信息
+        })), { name: 'ADD...', color: '#af2828' }]);
+
+         // 格式化 teeth 数据
+         const formattedTeethData = Array.from({ length: 16 }, (_, i) => {
+          const toothId = i + 1;
+          const storedToothData = storedToothPaintData[toothId] || {};
+          return {
+            id: toothId,
+            color: storedToothData.paintData?.[0]?.color 
+              ? `#${((1 << 24) + (storedToothData.paintData[0].color.r << 16) + (storedToothData.paintData[0].color.g << 8) + storedToothData.paintData[0].color.b).toString(16).slice(1)}` 
+              : '#ffffff', // 从 paintData 中取第一个颜色作为默认颜色，格式化为 #RRGGBB
+            annotations: storedToothData.annotations || [], // 如果存储中没有 annotations，使用空数组
+          };
+        });
+  
+        // 更新 teeth 状态
+        setTeeth(formattedTeethData);
+        console.log('Formatted Teeth Data:', formattedTeethData);
+
+        // 根据 paintData 的值更新 highlightedTeeth
+        const newHighlightedTeeth = new Set();
+        for (const toothId in storedToothPaintData) {
+          if (storedToothPaintData[toothId].paintData && storedToothPaintData[toothId].paintData.length > 0) {
+            newHighlightedTeeth.add(toothId);
+          }
+        }
+        setHighlightedTeeth(newHighlightedTeeth); // 更新 highlightedTeeth
+
+      }
+    }
+  }, [file]);
 
   const handleEditButtonClick = () => {
     setIsEditing(!isEditing); // 切换编辑模式
   };
 
   const handleAddTooth = () => {
-  
-    const newTooth = {
-      id: teeth.length + 1, // Assign a new ID based on the current length
-      color: '#ffffff', // Default color
-      annotations: [],
-    };
-  
-    setTeeth(prevTeeth => [...prevTeeth, newTooth]);
-  };
-
-  const handleRemoveTooth = (id) => {
-    setTeeth(prevTeeth => prevTeeth.filter(tooth => tooth.id !== id));
-    setSelectedToothId(null); // Deselect the tooth after removing it
-  };
-
-  const checkTeethExistence = (data) => {
-    const existingTeeth = new Set();
-    // Check if toothPaintData exists in the input data
-    if (data.toothPaintData) {
-      // 遍历 toothPaintData，检查每个牙齿是否有颜色数据
-      for (const toothId in data.toothPaintData) {
-        console.log(toothId)
-        if (data.toothPaintData.hasOwnProperty(toothId)) {
-          const paintEntries = data.toothPaintData[toothId];
-          
-          // Check if there are any entries for this tooth ID
-          if (Array.isArray(paintEntries) && paintEntries.length > 0) {
-            existingTeeth.add(toothId); // 将存在的牙齿 ID 添加到集合中
-          }
+    setTeeth(prevTeeth => {
+      // Get the next tooth ID as before
+      const ids = prevTeeth.map(tooth => tooth.id).sort((a, b) => a - b);
+      let newId = 1;
+      for (let i = 0; i < ids.length; i++) {
+        if (ids[i] !== i + 1) {
+          newId = i + 1;
+          break;
+        } else {
+          newId = ids.length + 1;
         }
       }
-    }
-      setHighlightedTeeth(existingTeeth); // 更新高亮牙齿的状态
-    };
-
-    useEffect(() => {
-      console.log('Updated highlightedTeeth:', highlightedTeeth);
-    }, [highlightedTeeth]);
-
-    const getAnnotationsFromData = (data) => {
-      const newAnnotations = Object.keys(data.annotationColors).map(key => ({
-        name: key,
-        color: data.annotationColors[key].color || '#af2828' // Default color if not specified
-      }));
   
-      // Add "ADD..." annotation at the end
-      newAnnotations.push({ name: 'ADD...', color: '#af2828' });
-      return newAnnotations;
-    };
+      const newTooth = {
+        id: newId, // Using the smallest missing ID
+        color: '#ffffff', // Default color
+        annotations: [],
+      };
+  
+      // Return a new sorted array of teeth
+      return [...prevTeeth.concat(newTooth)].sort((a, b) => a.id - b.id);
+    });
+  };
+  
+  const handleRemoveTooth = (id) => {
+    setTeeth(prevTeeth => prevTeeth.filter(tooth => tooth.id !== id));
+    setSelectedToothId(null); // 取消选择被删除的牙齿
+  };
 
 
   useEffect(() => {
@@ -239,117 +272,130 @@ const handleAddAnnotation = (e) => {
   
 
   return (
-    <div className="annotation-panel">
-      
-      <div className="dropdown">
-        <label htmlFor="annotation-list">Annotation List</label>
-        <select id="annotation-list" onChange={handleAnnotationChange}>
-          {annotations.map((annotation, index) => (
-            <option key={index} value={annotation.name}>
-              {annotation.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {showAddInput && (
-        <form onSubmit={handleAddAnnotation}>
-          <div className="form-row">
-            <input
-              type="text"
-              value={newAnnotation}
-              onChange={(e) => setNewAnnotation(e.target.value)}
-              placeholder="Enter new annotation"
-              className="custom-input"
-            />
-            <input
-              type="color"
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              className="color1"
-            />
+    <div>
+      {isPanelVisible ? (
+        <div className="annotation-panel">
+          <button onClick={togglePanelVisibility} className="toggle-panel-button">
+            -
+          </button>
+          <div className="dropdown">
+            <label htmlFor="annotation-list">Annotation List</label>
+            <select id="annotation-list" onChange={handleAnnotationChange}>
+              {annotations.map((annotation, index) => (
+                <option key={index} value={annotation.name}>
+                  {annotation.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <button type="submit" className="submit-button">Yes</button>
-        </form>
-      )}
 
-      {!showAddInput && (
-        <button className="edit-button" onClick={() => setShowAnnotationList(!showAnnotationList)}>
-          {showAnnotationList ? 'Hide' : 'Edit'}
-        </button>
-      )}
-
-      {/* Display list of annotations with a remove button */}
-      {showAnnotationList && (
-        <ul className="annotation-list">
-          {annotations.slice(0, annotations.length - 1).map((annotation, index) => (
-            <li key={index} className="annotation-item">
-              {editingIndex === index ? (
+          {showAddInput && (
+            <form onSubmit={handleAddAnnotation}>
+              <div className="form-row">
                 <input
                   type="text"
-                  value={editedAnnotation}
-                  onChange={(e) => setEditedAnnotation(e.target.value)}
-                  onBlur={() => handleEditSave(index)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleEditSave(index);
-                  }}
+                  value={newAnnotation}
+                  onChange={(e) => setNewAnnotation(e.target.value)}
+                  placeholder="Enter new annotation"
+                  className="custom-input"
                 />
-              ) : (
-                <span 
-                  className="truncate-text"
-                  title={annotation.name} 
-                  onDoubleClick={() => handleDoubleClick(index, annotation.name)}>
-                  {annotation.name}
-                </span>
-              )}
-              <input
-                type="color"
-                value={annotation.color}
-                onChange={(e) => handleColorChange(index, e.target.value)}
-              />
-              <button className="remove-button" onClick={() => handleRemoveAnnotation(annotation)}>
-                Remove
-              </button>
-              
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
-        {teeth.map((tooth) => (
-          
-          <div 
-            key={tooth.id} 
-            className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`}  // 添加 selected 类
-            onClick={() => handleToothAction(tooth.id)}  // 只传递牙齿ID，不传递新颜色
-          >
-            <input
-              type="color"
-              value={tooth.color}
-              onChange={(e) => handleToothAction(tooth.id, e.target.value)}  // 传递牙齿ID和新的颜色
-              className="teeth-color" 
-            />
-             <span style={{ color: highlightedTeeth.has(tooth.id.toString()) ? 'green' : '' }}>Tooth {tooth.id}</span>
-            
-            {isEditing && (
-             <button className="remove-button" onClick={(e) => { e.stopPropagation(); handleRemoveTooth(tooth.id); }}>
-              Remove
+                <input
+                  type="color"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="color1"
+                />
+              </div>
+              <button type="submit" className="submit-button">Yes</button>
+            </form>
+          )}
+
+          {!showAddInput && (
+            <button className="edit-button" onClick={() => setShowAnnotationList(!showAnnotationList)}>
+              {showAnnotationList ? 'Hide' : 'Edit'}
             </button>
-            )}
+          )}
+
+          {showAnnotationList && (
+            <ul className="annotation-list">
+              {annotations.slice(0, annotations.length - 1).map((annotation, index) => (
+                <li key={index} className="annotation-item">
+                  {editingIndex === index ? (
+                    <input
+                      type="text"
+                      value={editedAnnotation}
+                      onChange={(e) => setEditedAnnotation(e.target.value)}
+                      onBlur={() => handleEditSave(index)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEditSave(index);
+                      }}
+                    />
+                  ) : (
+                    <span 
+                      className="truncate-text"
+                      title={annotation.name} 
+                      onDoubleClick={() => handleDoubleClick(index, annotation.name)}>
+                      {annotation.name}
+                    </span>
+                  )}
+                  <input
+                    type="color"
+                    value={annotation.color}
+                    onChange={(e) => handleColorChange(index, e.target.value)}
+                    className="color-input-hidden"
+                  />
+                  <button className="remove-button" onClick={() => handleRemoveAnnotation(annotation)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        <div className="tooth-container">
+          <div className="tooth-list" style={{ maxHeight: `${listHeight}px` }}>
+            {teeth.map((tooth) => (
+              <div 
+                key={tooth.id} 
+                className={`tooth-item ${tooth.id === selectedToothId ? 'selected' : ''}`} 
+                onClick={() => handleToothAction(tooth.id)}
+              >
+                <input
+                  type="color"
+                  value={tooth.color}
+                  onChange={(e) => handleToothAction(tooth.id, e.target.value)}
+                  className="teeth-color" 
+                />
+                <span style={{ color: highlightedTeeth.has(tooth.id.toString()) ? 'green' : '' }}>Tooth {tooth.id}</span>
+                
+                {isEditing && (
+                  <button className="remove-button" onClick={(e) => { e.stopPropagation(); handleRemoveTooth(tooth.id); }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+          <div className="annotation-panel-footer">
+            <button className="edit-button" onClick={handleEditButtonClick}>
+              {isEditing ? 'Hide' : 'Edit'}
+            </button>
+            {isEditing && (
+              <button className="edit-button" onClick={handleAddTooth}>
+                Add Tooth
+              </button>
+            )}
+        </div>
       </div>
-      <button className="edit-button" onClick={handleEditButtonClick}>
-        {isEditing ? 'Hide' : 'Edit'}
-      </button>
-      <div>
-      {isEditing && (
-      <button className="add-tooth-button" onClick={handleAddTooth}>
-        Add Tooth
-      </button>
+      ): (
+        <button onClick={togglePanelVisibility} className="show-panel-button">
+          +
+        </button>
       )}
     </div>
-  </div>
   );
 };
+
 
 export default AnnotationPanel;

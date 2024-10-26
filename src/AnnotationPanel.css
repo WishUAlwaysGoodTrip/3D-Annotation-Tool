@@ -11,7 +11,28 @@
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5); /* Shadow to give separation from main content */
   z-index: 1000; /* Make sure it stays above the content */
 }
-
+.toggle-panel-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.show-panel-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
 .dropdown {
   margin-bottom: 20px;
 }
@@ -191,6 +212,7 @@ form {
   background-color: #ffffff;
   cursor: pointer;
   overflow: hidden;
+  display: none;
 }
 
 /* 确保内部的颜色样式也被正确应用 */
@@ -273,4 +295,22 @@ form {
 .tooth-item.selected {
   background-color: rgba(76, 76, 76, 0.5); 
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
+}
+
+.annotation-panel-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  gap: 10px; /* 两个按钮之间的距离 */
+}
+
+.tooth-container {
+  display: flex;
+  flex-direction: column;
+  height: 50%; /* 根据需要设置高度 */
+}
+
+.color-input-hidden {
+  display: none;
 }

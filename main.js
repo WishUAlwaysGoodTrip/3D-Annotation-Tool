@@ -54,7 +54,7 @@ function loadDefaultFile() {
 
     // 将文件发送到渲染进程
     win.webContents.send('file-selected', {
-      name: 'SuperMario02.stl',
+      name: 'upper_default.stl',
       path: defaultFilePath,
       data: fileBase64,
       size: fs.statSync(defaultFilePath).size
@@ -146,7 +146,7 @@ function createHotkeysWindow() {
 
   hotkeysWindow = new BrowserWindow({
     width: 500,
-    height: 420,
+    height: 500,
     modal: true,  // 模态窗口，使其成为主窗口的子窗口
     parent: win,
     webPreferences: {

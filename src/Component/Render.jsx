@@ -205,7 +205,8 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
         annotationNames.forEach((name) => existingAnnotationNames.add(name));
   
         // 更新 toothPaintData 中的 annotations 为去重后的名称数组
-        toothPaintData[id].annotations = Array.from(existingAnnotationNames);
+        toothPaintData[id].annotations = Array.from(existingAnnotationNames).filter(name => name !== undefined);
+        console.log(toothPaintData)
       });
     }
   }, [teethData]); // 当 teethData 变化时调用
