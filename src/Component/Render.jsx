@@ -410,6 +410,7 @@ function loadModel(file) {
 }
 
 // 绘制选定区域
+// 绘制选定区域
 function paintIntersectedArea(intersect, annotationName) {
   const indices = [];
   const tempVec = new THREE.Vector3();
@@ -438,7 +439,7 @@ function paintIntersectedArea(intersect, annotationName) {
 
   const colorAttr = targetMesh.geometry.getAttribute('color');
 
-  // Ensure annotationColors[annotationName] is a Set
+  // 确保 annotationColors[annotationName] 是 Set 类型
   if (!(annotationColors[annotationName] instanceof Set)) {
     annotationColors[annotationName] = new Set();
   }
@@ -449,36 +450,17 @@ function paintIntersectedArea(intersect, annotationName) {
       paintData: []
     };
   }
-
-  // Check if there's an existing entry with the same color
-  let colorEntry = toothPaintData[selectedToothId].paintData.find(
-    entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
-  );
-
-  // If no existing entry is found, create a new one
-  if (!colorEntry) {
-    colorEntry = {
-      indices: [],
-      color: {
-        r: paintColor.r,
-        g: paintColor.g,
-        b: paintColor.b
-      }
-    };
-    toothPaintData[selectedToothId].paintData.push(colorEntry);
-  }
-
-  // Add all indices to the color entry
+  
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-
+  
     annotationColors[annotationName].add(index);
-    colorEntry.indices.push(index);
+    toothPaintData[selectedToothId].paintData.push({ index, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
   }
   
-
-  colorAttr.needsUpdate = true; // Notify Three.js to update colors
+  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  
 }
 
 
@@ -584,11 +566,10 @@ function restoreToothColors(toothId) {
     colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
   }
 
+  // 如果存在与当前牙齿 ID 相关的涂色数据，则恢复这些数据
   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-    toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
-      indices.forEach((index) => {
-        colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
-      });
+    toothPaintData[toothId].paintData.forEach(({ index, color }) => {
+      colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
     });
   }
 
