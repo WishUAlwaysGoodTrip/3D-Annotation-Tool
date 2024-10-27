@@ -979,11 +979,36 @@ function findNearestVertex(intersect) {
 }
 
 function createHighlightPoint(intersect) {
+  const positionAttribute = targetMesh.geometry.getAttribute("position");
+  const indexAttribute = targetMesh.geometry.getIndex();
+
+  let totalArea = 0;
+  const faceCount = indexAttribute.count / 3; // 每3个索引为一个面
+
+  // 遍历每个面，计算面积并累加
+  for (let i = 0; i < faceCount; i++) {
+    const a = indexAttribute.getX(i * 3);
+    const b = indexAttribute.getX(i * 3 + 1);
+    const c = indexAttribute.getX(i * 3 + 2);
+
+    const vA = new THREE.Vector3().fromBufferAttribute(positionAttribute, a);
+    const vB = new THREE.Vector3().fromBufferAttribute(positionAttribute, b);
+    const vC = new THREE.Vector3().fromBufferAttribute(positionAttribute, c);
+
+    // 使用三角形面积公式计算每个面的面积
+    const area = new THREE.Triangle(vA, vB, vC).getArea();
+    totalArea += area;
+  }
+
+  // 计算平均面面积
+  const averageFaceArea = totalArea / faceCount;
+  const pointSize = Math.sqrt(averageFaceArea) * 0.2; // 使用平方根比例调整大小
+
   // Find the nearest vertex to the intersection point
   const nearestVertexPosition = findNearestVertex(intersect);
 
   // Create a new highlight point at the nearest vertex
-  const geometry = new THREE.SphereGeometry(0.25, 16, 16); // Adjust size as needed
+  const geometry = new THREE.SphereGeometry(pointSize, 16, 16); // Adjust size as needed
   const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Adjust color as needed
   selectedPoint = new THREE.Mesh(geometry, material);
   selectedPoint.position.copy(nearestVertexPosition);
