@@ -613,8 +613,9 @@ function eraseIntersectedArea(intersect) {
 
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
-      const intersects = sphere.intersectsBox(box);
-      if (intersects) {
+        // 只对确实可能相交的 box 执行检查，避免重复计算
+        if (!sphere.intersectsBox(box)) return NOT_INTERSECTED;
+     
         const { min, max } = box;
         for (let x = 0; x <= 1; x++) {
           for (let y = 0; y <= 1; y++) {
