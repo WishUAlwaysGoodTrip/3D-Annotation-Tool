@@ -89,24 +89,25 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
         {fileList.length > 0 && (
           <>
             {isListVisible && (
-              <div 
-                ref={listRef}
-                className="file-list"
-                style={{ 
-                  width: `${listWidth}px`,
-                  height: `${listHeight}px`,
-                  position: 'relative',
-                }}
-              >
+              <div style={{ display: 'flex' }}>
+                <div
+                  ref={listRef}
+                  className="file-list"
+                  style={{
+                    width: `${listWidth}px`,
+                    height: `${listHeight}px`,
+                    position: 'relative',
+                  }}
+                >
                   <div className="folder-path">
                     Folder: {folderPath ? folderPath.split('\\').pop() : 'Unknown Folder'}
                   </div>
                   {fileList.map((file, index) => {
                     const isHighlighted = highlightedFiles.includes(file.name); // 检查文件是否需要高亮
                     return (
-                      <div 
-                        key={index} 
-                        onClick={() => handleFileClick(file)} 
+                      <div
+                        key={index}
+                        onClick={() => handleFileClick(file)}
                         className={`file-item ${selectedFile === file ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}`}
                       >
                         {file.webkitRelativePath || file.name}
@@ -114,26 +115,25 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
                     );
                   })}
                   {/* 用于调整宽度的 resizer */}
-                  <div 
-                    className="resizer" 
-                    onMouseDown={startResize} 
+                  <div
+                    className="resizer"
+                    onMouseDown={startResize}
                     style={{ cursor: 'ew-resize', width: '5px', background: '#ccc' }}
                   ></div>
-
-                  {/* 右侧的滑动按钮，显示时是 < */}
-                  <button 
-                    onClick={toggleListVisibility} 
+                </div>
+                <button
+                    onClick={toggleListVisibility}
                     className="slide-toggle-button"
-                  >
-                    {'<'}
-                  </button>
+                >
+                   {'<'}
+                </button>
               </div>
             )}
     
             {/* 隐藏状态时的 > 按钮，仅当有文件列表且被隐藏时显示 */}
             {!isListVisible && (
-              <button 
-                onClick={toggleListVisibility} 
+              <button
+                onClick={toggleListVisibility}
                 className="show-button"
                 style={{
                   top: toggleButtonTop, // 动态调整位置

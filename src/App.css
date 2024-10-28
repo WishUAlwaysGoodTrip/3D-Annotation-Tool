@@ -120,7 +120,6 @@
 }
 
 
-.slide-toggle-button,
 .show-button {
   position: absolute;
   top: 50%;
@@ -138,14 +137,10 @@
   border-radius: 7px;
 }
 
-.slide-toggle-button {
-  right: 0; 
-}
 
 .show-button {
   left: 0; 
 }
-.slide-toggle-button:hover,
 .show-button:hover {
   opacity: 1;
 }
@@ -165,4 +160,24 @@ body {
 .file-item.highlighted.selected {
   background-color: #a9a9a9; 
   color: #ffffff;
+}
+.slide-toggle-button {
+  width: 5px;
+  height: 80px;
+  background-color: #ccc;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 7px;
+}
+
+.slide-toggle-button:hover {
+  opacity: 1;
 }
