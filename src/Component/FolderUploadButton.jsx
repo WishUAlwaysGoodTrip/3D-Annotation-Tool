@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import useFolderToolbarStore from '../stores/useFolderToolbarStore.js'
 const { ipcRenderer } = window.require('electron');
 
 const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, folderPath }) => {
-    const [listWidth, setListWidth] = useState(200); // 默认宽度
+    //const [listWidth, setListWidth] = useState(200); // 默认宽度
+    const {listWidth, setListWidth} = useFolderToolbarStore();
     const [listHeight, setListHeight] = useState(window.innerHeight * 0.7); // 默认高度
     const [selectedFile, setSelectedFile] = useState(null); // 保存当前选中的文件
-    const [isListVisible, setIsListVisible] = useState(true);
+    //const [isListVisible, setIsListVisible] = useState(true);
+    const {isListVisible, setIsListVisible} = useFolderToolbarStore();
+    const {setIsFileListLoaded} = useFolderToolbarStore();
     const [highlightedFiles, setHighlightedFiles] = useState([]); // 保存需要高亮的文件名
     const [toggleButtonTop, setToggleButtonTop] = useState('50%');
     const listRef = useRef(null);
@@ -43,6 +47,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
 
     useEffect(() => {
       updateToggleButtonPosition();
+      if(fileList.length > 0) setIsFileListLoaded(true);
     }, [isListVisible, listHeight, fileList.length]);
 
     const updateToggleButtonPosition = () => {
