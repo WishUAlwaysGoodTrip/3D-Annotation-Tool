@@ -657,20 +657,30 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 1],
         originalColors[idx * 3 + 2]
       );
-
+  
       // 移除 `paintData` 中对应的 index
       if (toothPaintData[selectedToothId] && Array.isArray(toothPaintData[selectedToothId].paintData)) {
+        toothPaintData[selectedToothId].paintData.forEach((paint) => {
+          // 从 indices 数组中移除当前的 index
+          paint.indices = paint.indices.filter((i) => i !== idx);
+        });
+  
+        // 移除没有 indices 的 paintData
         toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
-          (paint) => paint.index !== idx
+          (paint) => paint.indices.length > 0
         );
       }
+  
       if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
+        selectedFaceLines[selectedToothId] = new Set(
+          Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx)
+        );
       }
     });
-
+  
     colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
   }, 0);
+  
 
 }
 
