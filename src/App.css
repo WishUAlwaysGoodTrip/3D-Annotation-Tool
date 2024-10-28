@@ -156,13 +156,13 @@ body {
 }
 
 .file-item.highlighted {
-  background-color: #7fcb7f;
+  background-color: #d3d3d3;
 }
 .file-item.highlighted:hover {
-  background-color: #8dbe8d; 
+  background-color: #c0c0c0; 
   transition: background-color 0.3s; 
 }
 .file-item.highlighted.selected {
-  background-color: #84a984; 
-  color: white;
+  background-color: #a9a9a9; 
+  color: #ffffff;
 }
