@@ -72,7 +72,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
                     onClick={toggleListVisibility} 
                     className="toggle-button top-right"
                   >
-                    ←
+                    -
                   </button>
                   <div className="folder-path">
                     Folder: {folderPath ? folderPath.split('\\').pop() : 'Unknown Folder'}
@@ -101,10 +101,10 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
             {!isListVisible && (
               <button 
                 onClick={toggleListVisibility} 
-                className="toggle-button"
+                className="show-button"
                 style={{ position: 'absolute', top: '10px', left: '10px' }} // 确保右箭头在页面右上角
               >
-                →
+                +
               </button>
             )}
           </>
