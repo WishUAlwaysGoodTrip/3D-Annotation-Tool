@@ -1089,13 +1089,18 @@ function updateControls() {
     }
     console.log("render drag")
   } else {
-    controls.enableRotate = true;
-    controls.enableZoom = false;  
-    controls.enablePan = true;   
+    controls.enableRotate = true; // 禁止旋转
+    controls.enableZoom = true;   // 禁止缩放
+    controls.enablePan = true;    // 禁止平移
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
     }
+    controls.domElement.addEventListener('wheel', (event) => {
+      event.preventDefault(); // 防止页面滚动
+      controls.dollyIn(Math.pow(0.95, event.deltaY * 0.1));
+      controls.update();
+    });
   }
 }
 
