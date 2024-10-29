@@ -74,7 +74,7 @@
   transition: background-color 0.2s ease;
 }
 
-/* 当鼠标悬停在选择框上时的颜色变化 */
+/* The color change when the mouse hovers over the selection box */
 .dropdown select:hover {
   background-color: #777777;
 }
@@ -85,7 +85,7 @@
   flex-direction: column;
   overflow-y: auto;
   padding-right: 10px;
-  transition: max-height 0.3s ease; /* 平滑调整高度 */
+  transition: max-height 0.3s ease; 
 }
 
 .tooth-item {
@@ -198,17 +198,17 @@
 .annotation-item input[type="text"] {
   max-width: 80px;
 }
-/* 父容器设置为 text-align 居中 */
+/*Set the parent container to text align centered*/
 form {
   text-align: center;
 }
 
 
-/* 父容器设置为 flex 布局，水平排列 input 和颜色选择器 */
+/*Set the parent container to flex layout, horizontally arrange inputs and color selectors*/
 .form-row {
   display: flex;
-  align-items: center; /* 垂直居中对齐 */
-  margin-bottom: 10px; /* 给下方留出间隙 */
+  align-items: center; /* align vertical center */
+  margin-bottom: 10px; /* Leave a gap below */
 }
 
 .custom-input {
@@ -217,8 +217,8 @@ form {
   border: 1px solid #555;
   padding: 5px;
   border-radius: 5px;
-  margin-right: 10px; /* 给颜色选择器留出间隙 */
-  width: 150px; /* 控制输入框的宽度 */
+  margin-right: 10px; /* Leave a gap for the color selector */
+  width: 150px; /* Control the width of the input box */
 }
 
 .color1 {
@@ -234,7 +234,7 @@ form {
   display: none;
 }
 
-/* 确保内部的颜色样式也被正确应用 */
+/* Ensure that the internal color and style are also correctly applied */
 .color1::-webkit-color-swatch {
   border: none;
   border-radius: 50%;
@@ -321,13 +321,13 @@ form {
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
-  gap: 10px; /* 两个按钮之间的距离 */
+  gap: 10px; /* The distance between two buttons */
 }
 
 .tooth-container {
   display: flex;
   flex-direction: column;
-  height: 50%; /* 根据需要设置高度 */
+  height: 50%; /* Set the height as needed */
 }
 
 .color-input-hidden {

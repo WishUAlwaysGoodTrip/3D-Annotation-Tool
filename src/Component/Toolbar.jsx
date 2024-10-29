@@ -17,7 +17,7 @@ const Toolbar = () => {
   return (
       <div id="toolbar"
            style={{
-               left: isFileListLoaded && isListVisible ? `${listWidth + 32}px` : '8px',  // fileList 显示时紧贴右侧，隐藏时回到左侧
+               left: isFileListLoaded && isListVisible ? `${listWidth + 32}px` : '8px',  // FileList is displayed to the right and returns to the left when hidden
            }}>
         {/* Button 1 */}
         <ToolbarButton
@@ -50,7 +50,7 @@ const Toolbar = () => {
             handleButtonClick('painting');
             setActiveButton("button3");
             if (activeButton === 'button3')
-                setIsPanelVisible(!isPanelVisible);  // 再次点击后显示/隐藏面板
+                setIsPanelVisible(!isPanelVisible);  
           }}
           id="button3"
         />

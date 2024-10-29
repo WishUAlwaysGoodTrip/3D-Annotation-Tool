@@ -4,21 +4,21 @@ import useFolderToolbarStore from '../stores/useFolderToolbarStore.js'
 const { ipcRenderer } = window.require('electron');
 
 const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, folderPath }) => {
-    //const [listWidth, setListWidth] = useState(200); // 默认宽度
+    //const [listWidth, setListWidth] = useState(200); 
     const {listWidth, setListWidth} = useFolderToolbarStore();
-    const [listHeight, setListHeight] = useState(window.innerHeight * 0.7); // 默认高度
-    const [selectedFile, setSelectedFile] = useState(null); // 保存当前选中的文件
+    const [listHeight, setListHeight] = useState(window.innerHeight * 0.7); // Default height
+    const [selectedFile, setSelectedFile] = useState(null); // Save the currently selected file
     //const [isListVisible, setIsListVisible] = useState(true);
     const {isListVisible, setIsListVisible} = useFolderToolbarStore();
     const {setIsFileListLoaded} = useFolderToolbarStore();
-    const [highlightedFiles, setHighlightedFiles] = useState([]); // 保存需要高亮的文件名
+    const [highlightedFiles, setHighlightedFiles] = useState([]); // Save the file name that needs to be highlighted
     const [toggleButtonTop, setToggleButtonTop] = useState('50%');
     const listRef = useRef(null);
 
     useEffect(() => {
       const handleWindowResize = () => {
-        setListHeight(window.innerHeight * 0.7); // 将高度设为窗口高度的 70%    
-        // 在窗口大小变化时更新按钮位置
+        setListHeight(window.innerHeight * 0.7);   
+        // Update button position when window size changes
         if (!isListVisible) {
           setToggleButtonTop(`${window.innerHeight * 0.7 / 2}px`);
         } else {
@@ -33,13 +33,12 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
       };
     }, [isListVisible]);
     
-    // 当文件夹路径更新时，监听匹配的 .stl 文件
+    // When the folder path is updated, listen for matching. stl files
     useEffect(() => {
       ipcRenderer.on('folder-selected', (event, { folderPath, files, matchingFiles }) => {
-        setHighlightedFiles(matchingFiles);  // 设置需要高亮的文件名
+        setHighlightedFiles(matchingFiles);  // //Set the file name that needs to be highlighted
       });
 
-      // 清理事件监听器
       return () => {
         ipcRenderer.removeAllListeners('folder-selected');
       };
@@ -65,7 +64,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
 
         const doResize = (event) => {
           const currentWidth = startWidth + event.clientX - startX;
-          setListWidth(Math.max(200, Math.min(500, currentWidth))); // 限制宽度在 200px 到 500px 之间
+          setListWidth(Math.max(200, Math.min(500, currentWidth))); 
         };
 
         const stopResize = () => {
@@ -79,8 +78,8 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
 
     const handleFileClick = (file) => {
         console.log('File object:', file);
-        setSelectedFile(file); // 设置当前选中的文件
-        onFolderUpload(file); // 执行上传逻辑
+        setSelectedFile(file); 
+        onFolderUpload(file); 
         ipcRenderer.send('file-clicked', file.name);
     };
 
@@ -108,7 +107,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
                     Folder: {folderPath ? folderPath.split('\\').pop() : 'Unknown Folder'}
                   </div>
                   {fileList.map((file, index) => {
-                    const isHighlighted = highlightedFiles.includes(file.name); // 检查文件是否需要高亮
+                    const isHighlighted = highlightedFiles.includes(file.name);
                     return (
                       <div
                         key={index}
@@ -119,7 +118,7 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
                       </div>
                     );
                   })}
-                  {/* 用于调整宽度的 resizer */}
+                  {/* Resizer for adjusting width */}
                   <div
                     className="resizer"
                     onMouseDown={startResize}
@@ -135,13 +134,13 @@ const FolderUploadButton = ({ onFolderUpload, handleDirectoryChange, fileList, f
               </div>
             )}
     
-            {/* 隐藏状态时的 > 按钮，仅当有文件列表且被隐藏时显示 */}
+            {/* The > button in hidden state is only displayed when there is a file list and it is hidden */}
             {!isListVisible && (
               <button
                 onClick={toggleListVisibility}
                 className="show-button"
                 style={{
-                  top: toggleButtonTop, // 动态调整位置
+                  top: toggleButtonTop,
                   position: 'absolute',
                   left: 0,
                   transform: 'translateY(-50%)',

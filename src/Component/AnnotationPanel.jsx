@@ -13,19 +13,20 @@ function createAnnotationStore(filename) {
     cwd: path.join(process.cwd(), 'public', 'datasettest'),
   });
 }
+// AnnotationPanel component: used to display and manage annotation panels, allowing users to add, delete, and edit tooth annotations
 const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange, file}) => {
 
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   const [annotations, setAnnotations] = useState([
     { name: 'ADD...', color: '#af2828' }
   ]);
-  const [listHeight, setListHeight] = useState(window.innerHeight * 0.55); // 默认高度
+  const [listHeight, setListHeight] = useState(window.innerHeight * 0.55);
   const [selectedToothId, setSelectedToothId] = useState(null);
   const [newAnnotation, setNewAnnotation] = useState('');
   const [newColor, setNewColor] = useState('#af2828');
   const [showAddInput, setShowAddInput] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null); // 保存正在编辑的注释索引
-  const [editedAnnotation, setEditedAnnotation] = useState(''); // 保存编辑中的注释名称
+  const [editingIndex, setEditingIndex] = useState(null); 
+  const [editedAnnotation, setEditedAnnotation] = useState('');
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
   const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // 用于存储高亮的牙齿ID
@@ -45,10 +46,10 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Tab') {
-        e.preventDefault(); // 防止默认的 Tab 行为
+        e.preventDefault(); // Prevent default tab behavior
         setSelectedToothId((prevId) => {
-          const nextId = prevId === null ? 1 : (prevId % teeth.length) + 1; // 循环选择
-          handleToothAction(nextId); // 触发点击事件
+          const nextId = prevId === null ? 1 : (prevId % teeth.length) + 1; // Loop selection
+          handleToothAction(nextId); // Trigger click event
           return nextId;
         });
       }

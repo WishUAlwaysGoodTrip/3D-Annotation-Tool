@@ -42,9 +42,9 @@
 }
 
 .app-header {
-  position: absolute;  /* 绝对定位 */
-  top: 10px;           /* 离顶部 10px */
-  left: 10px;          /* 离左边 10px */
+  position: absolute;  
+  top: 10px;           
+  left: 10px;          
   padding: 0;
 }
 
@@ -72,7 +72,7 @@
 .upload-icon {
   width: 15px;
   height: 15px;
-  margin-right: 10px;  /* 图标与文本之间的间距 */
+  margin-right: 10px;  
 }
 .folder-path {
   font-weight: bold;
@@ -81,9 +81,9 @@
 }
 .file-list {
   position: absolute;
-  top: 0px; /* 根据需要调整位置 */
+  top: 0px; 
   left: 0px; 
-  width: 200px; /* 根据内容调整宽度 */
+  width: 200px; 
   max-height: 100vh;
   overflow-y: auto;
   background: rgba(215,215,215, 0.8);
@@ -93,15 +93,15 @@
   border-radius: 5px;
 }
 
-/* 拖动条样式 */
+/* Drag bar style for file list */
 .resizer {
   position: absolute;
   top: 0;
   right: 0;
-  width: 5px; /* 拖动条宽度 */
-  height: 100%; /* 拖动条高度与容器相同 */
-  background: #666; /* 拖动条颜色 */
-  cursor: ew-resize; /* 光标样式 */
+  width: 5px; 
+  height: 100%; 
+  background: #666; 
+  cursor: ew-resize; 
 }
 .file-item {
   margin: 5px 0;

@@ -14,7 +14,7 @@
 //           </div>
 //         ))
 //       )}
-//       {/* 在这里加入关闭按钮 */}
+//       {/* Add a close button here */}
 //       <button onClick={toggleRecentFiles} className="toggle-button">
 //         Close Recent Files
 //       </button>

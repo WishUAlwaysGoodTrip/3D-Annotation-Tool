@@ -2,8 +2,8 @@ import {create} from 'zustand';
 
 
 const useFolderToolbarStore = create((set) => ({
-    listWidth: 200, // 文件列表的默认宽度
-    isListVisible: true, // 文件列表的可见性状态
+    listWidth: 200, 
+    isListVisible: true, 
     isFileListLoaded: false,
 
     setListWidth: (width) => set({ listWidth: width }),

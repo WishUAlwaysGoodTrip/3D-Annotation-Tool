@@ -8,14 +8,14 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
 
-    // 增加 chunk size 警告的阈值，默认是 500kB，这里增加到 1000kB
+    //Increase the threshold for chunk size warning, default is 500kB, here it is increased to 1000kB
     chunkSizeWarningLimit: 1000,  
 
-    // 手动分割 chunk
+    //Manually split chunks
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // 如果模块来自 node_modules 文件夹，将它们打包到 vendor.js 中
+          //If the modules come from the Node.js folder, package them into vendor. js
           if (id.includes('node_modules')) {
             return 'vendor';
           }

@@ -1,9 +1,9 @@
 // src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App'; // 确保导入主应用组件
+import App from './App'; 
 
-// 确保在 DOM 加载完成后获取根元素
+//Ensure to retrieve the root element after DOM loading is complete
 const rootElement = document.getElementById('root');
 
 if (rootElement) {

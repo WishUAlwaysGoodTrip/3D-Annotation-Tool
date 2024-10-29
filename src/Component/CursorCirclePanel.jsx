@@ -12,7 +12,7 @@ const CursorCirclePanel = () => {
       {isPanelVisible && (
         <div id="cursor-panel">
           <button className="close-button" onClick={closePanel}>×</button> 
-          <h3 className="panel-title">Cursor Settings</h3> {/* 添加标题 */}
+          <h3 className="panel-title">Cursor Settings</h3> {/* Add Title */}
 
           <div className="cursor-option">
             <label htmlFor="cursor-shape">Shape:</label>

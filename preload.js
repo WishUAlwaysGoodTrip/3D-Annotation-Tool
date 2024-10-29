@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  readFile: (filePath) => fs.readFileSync(filePath),  // 读取文件内容
-  writeFile: (filePath, data) => fs.writeFileSync(filePath, data),  // 写入文件内容
+  readFile: (filePath) => fs.readFileSync(filePath),  //Read file content
+  writeFile: (filePath, data) => fs.writeFileSync(filePath, data),  //Write file content
   send: (channel, data) => ipcRenderer.send(channel, data),
   receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args)),
 });
