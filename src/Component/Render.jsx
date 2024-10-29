@@ -673,7 +673,7 @@ function eraseIntersectedArea(intersect) {
   
       if (selectedFaceLines[selectedToothId]) {
         selectedFaceLines[selectedToothId] = new Set(
-          Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx)
+          Array.from(selectedFaceLines[selectedToothId]).filter((item) => item.faceIndex !== Math.floor(index / 3))
         );
       }
     });
@@ -874,6 +874,7 @@ function colorFace(faceIndex) {
 }
 
 function restoreLineSelections(toothId) {
+  if(!targetMesh.geometry) return;
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
   // 将所有顶点颜色重置为白色
