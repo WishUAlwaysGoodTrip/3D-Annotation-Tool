@@ -1,10 +1,13 @@
 import ToolbarButton from './ToolbarButton';
 import '../Toolbar.css'
 import useToolbarStore from '../stores/useToolbarStore.js'
+import useFolderToolbarStore from "../stores/useFolderToolbarStore.js";
 
 const Toolbar = () => {
   const { setMode, activeButton, setActiveButton, wireFrame} = useToolbarStore();
   const {isPanelVisible, setIsPanelVisible, changeWireFrame} = useToolbarStore();
+  const {listWidth, isListVisible} = useFolderToolbarStore();
+  const {isFileListLoaded} = useFolderToolbarStore();
 
   const handleButtonClick = (newMode) => {
     setMode(newMode);
@@ -12,7 +15,10 @@ const Toolbar = () => {
   };
 
   return (
-      <div id="toolbar">
+      <div id="toolbar"
+           style={{
+               left: isFileListLoaded && isListVisible ? `${listWidth + 32}px` : '8px',  // fileList 显示时紧贴右侧，隐藏时回到左侧
+           }}>
         {/* Button 1 */}
         <ToolbarButton
           normalIcon="./assets/normal_u110.svg"

@@ -12,26 +12,45 @@
   z-index: 1000; /* Make sure it stays above the content */
 }
 .toggle-panel-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #007bff;
-  color: #fff;
+  left: -13px;
+  width: 5px;
+  height: 80px;
+  background-color: #ccc;
   border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 7px;
+}
+
+.toggle-panel-button:hover {
+  opacity: 1;
 }
 .show-panel-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #28a745;
-  color: #fff;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 80px;
+  background-color: #ccc;
   border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
   cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  right: 0
+}
+.show-panel-button:hover {
+  opacity: 1;
 }
 .dropdown {
   margin-bottom: 20px;
@@ -314,3 +333,4 @@ form {
 .color-input-hidden {
   display: none;
 }
+

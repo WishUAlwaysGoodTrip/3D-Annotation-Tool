@@ -274,7 +274,7 @@ const handleAddAnnotation = (e) => {
       {isPanelVisible ? (
         <div className="annotation-panel">
           <button onClick={togglePanelVisibility} className="toggle-panel-button">
-            -
+            {">"}
           </button>
           <div className="dropdown">
             <label htmlFor="annotation-list">Annotation List</label>
@@ -363,7 +363,7 @@ const handleAddAnnotation = (e) => {
                   onChange={(e) => handleToothAction(tooth.id, e.target.value)}
                   className="teeth-color" 
                 />
-                <span style={{ color: highlightedTeeth.has(tooth.id.toString()) ? 'green' : '' }}>Tooth {tooth.id}</span>
+                <span style={{ backgroundColor: highlightedTeeth.has(tooth.id.toString()) ? '#d3d3d3' : '' }}>Tooth {tooth.id}</span>
                 
                 {isEditing && (
                   <button className="remove-button" onClick={(e) => { e.stopPropagation(); handleRemoveTooth(tooth.id); }}>
@@ -388,7 +388,7 @@ const handleAddAnnotation = (e) => {
       </div>
       ): (
         <button onClick={togglePanelVisibility} className="show-panel-button">
-          +
+          {'<'}
         </button>
       )}
     </div>
