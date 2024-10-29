@@ -1089,9 +1089,9 @@ function updateControls() {
     }
     console.log("render drag")
   } else {
-    controls.enableRotate = true; // 禁止旋转
-    controls.enableZoom = true;   // 禁止缩放
-    controls.enablePan = true;    // 禁止平移
+    controls.enableRotate = true;
+    controls.enableZoom = true;
+    controls.enablePan = true;
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
