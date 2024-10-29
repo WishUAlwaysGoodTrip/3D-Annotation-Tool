@@ -444,6 +444,11 @@ function paintIntersectedArea(intersect, annotationName) {
     };
   }
 
+  // Check if annotationName is already in annotations, if not, add it
+  if (!toothPaintData[selectedToothId].annotations.includes(annotationName)) {
+    toothPaintData[selectedToothId].annotations.push(annotationName);
+  }
+
   // Check if there's an existing entry with the same color
   let colorEntry = toothPaintData[selectedToothId].paintData.find(
     entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
@@ -613,9 +618,8 @@ function eraseIntersectedArea(intersect) {
 
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
-        // 只对确实可能相交的 box 执行检查，避免重复计算
-        if (!sphere.intersectsBox(box)) return NOT_INTERSECTED;
-     
+      const intersects = sphere.intersectsBox(box);
+      if (intersects) {
         const { min, max } = box;
         for (let x = 0; x <= 1; x++) {
           for (let y = 0; y <= 1; y++) {
@@ -658,30 +662,20 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 1],
         originalColors[idx * 3 + 2]
       );
-  
+
       // 移除 `paintData` 中对应的 index
       if (toothPaintData[selectedToothId] && Array.isArray(toothPaintData[selectedToothId].paintData)) {
-        toothPaintData[selectedToothId].paintData.forEach((paint) => {
-          // 从 indices 数组中移除当前的 index
-          paint.indices = paint.indices.filter((i) => i !== idx);
-        });
-  
-        // 移除没有 indices 的 paintData
         toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
-          (paint) => paint.indices.length > 0
+          (paint) => paint.index !== idx
         );
       }
-  
       if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(
-          Array.from(selectedFaceLines[selectedToothId]).filter((item) => item.faceIndex !== Math.floor(index / 3))
-        );
+        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
       }
     });
-  
+
     colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
   }, 0);
-  
 
 }
 
@@ -875,7 +869,6 @@ function colorFace(faceIndex) {
 }
 
 function restoreLineSelections(toothId) {
-  if(!targetMesh.geometry) return;
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
   // 将所有顶点颜色重置为白色
@@ -1083,19 +1076,15 @@ function updateControls() {
       MIDDLE: THREE.MOUSE.DOLLY,
       RIGHT: THREE.MOUSE.PAN
     }
+    console.log("render drag")
   } else {
     controls.enableRotate = true; // 禁止旋转
-    controls.enableZoom = true;   // 禁止缩放
+    controls.enableZoom = false;   // 禁止缩放
     controls.enablePan = true;    // 禁止平移
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
     }
-    controls.domElement.addEventListener('wheel', (event) => {
-      event.preventDefault(); // 防止页面滚动
-      controls.dollyIn(Math.pow(0.95, event.deltaY * 0.1));
-      controls.update();
-    });
   }
 }
 
