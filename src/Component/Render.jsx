@@ -407,19 +407,17 @@ function loadModel(file) {
 function paintIntersectedArea(intersect, annotationName) {
   const indices = [];
   const tempVec = new THREE.Vector3();
-
   const inverseMatrix = new THREE.Matrix4();
   inverseMatrix.copy(targetMesh.matrixWorld).invert();
 
-  const circleRadius = cursorCircle.scale.x * 5; 
+  const circleRadius = cursorCircle.scale.x * 5;
   const sphere = new THREE.Sphere();
   sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
   sphere.radius = circleRadius;
 
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
-      const intersects = sphere.intersectsBox(box);
-      return intersects ? INTERSECTED : NOT_INTERSECTED;
+      return sphere.intersectsBox(box) ? INTERSECTED : NOT_INTERSECTED;
     },
     intersectsTriangle: (tri, i, contained) => {
       if (contained || tri.intersectsSphere(sphere)) {
@@ -431,54 +429,42 @@ function paintIntersectedArea(intersect, annotationName) {
   });
 
   const colorAttr = targetMesh.geometry.getAttribute('color');
-
-  // Ensure annotationColors[annotationName] is a Set
   if (!(annotationColors[annotationName] instanceof Set)) {
     annotationColors[annotationName] = new Set();
   }
 
-  if (!toothPaintData[selectedToothId]) {
-    toothPaintData[selectedToothId] = {
-      annotations: [],
-      paintData: []
-    };
-  }
-
-  // Check if annotationName is already in annotations, if not, add it
-  if (!toothPaintData[selectedToothId].annotations.includes(annotationName)) {
-    toothPaintData[selectedToothId].annotations.push(annotationName);
-  }
-
-  // Check if there's an existing entry with the same color
+  // 检查并初始化 colorEntry
   let colorEntry = toothPaintData[selectedToothId].paintData.find(
     entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
   );
 
-  // If no existing entry is found, create a new one
+  // 如果没有找到对应的颜色 entry，创建一个新的
   if (!colorEntry) {
     colorEntry = {
       indices: [],
-      color: {
-        r: paintColor.r,
-        g: paintColor.g,
-        b: paintColor.b
-      }
+      color: { r: paintColor.r, g: paintColor.g, b: paintColor.b },
+      faces: [],
+      faceLines: []
     };
     toothPaintData[selectedToothId].paintData.push(colorEntry);
   }
 
-  // Add all indices to the color entry
+  if (!toothPaintData[selectedToothId].annotations.includes(annotationName)) {
+    toothPaintData[selectedToothId].annotations.push(annotationName);
+  }
+
+  // 添加选中区域的索引
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-
     annotationColors[annotationName].add(index);
     colorEntry.indices.push(index);
+    colorEntry.faces.push(index);
   }
-  
 
-  colorAttr.needsUpdate = true; // Notify Three.js to update colors
+  colorAttr.needsUpdate = true;
 }
+
 
 
 function restoreAnnotation(annotationName, teethData) {
@@ -521,29 +507,48 @@ function restoreAnnotation(annotationName, teethData) {
 }
 
 
+// function restoreToothColors(toothId) {
+//   const colorAttr = targetMesh.geometry.getAttribute('color');
+//   if (!colorAttr) {
+//     console.warn('No color attribute found on geometry.');
+//     return;
+//   }
+//   console.log("Restoring tooth colors for:", toothId); // 调试输出
+//   // 清除当前颜色，恢复到白色
+//   for (let i = 0; i < colorAttr.count; i++) {
+//     colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+//   }
+
+//   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+//     toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
+//       indices.forEach((index) => {
+//         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+//       });
+//     });
+//   }
+
+//   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+//     toothPaintData[toothId].paintData.forEach(({ faces, color }) => {
+//       faces.forEach(index => {
+//         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+//       });
+//     });
+
+//   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+// }}
 function restoreToothColors(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
-  if (!colorAttr) {
-    console.warn('No color attribute found on geometry.');
-    return;
-  }
-  console.log("Restoring tooth colors for:", toothId); // 调试输出
-  // 清除当前颜色，恢复到白色
-  for (let i = 0; i < colorAttr.count; i++) {
-    colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
-  }
+  if (!colorAttr) return;
 
   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-    toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
-      indices.forEach((index) => {
+    toothPaintData[toothId].paintData.forEach(({ faces, color }) => {
+      faces.forEach(index => {
         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
       });
     });
+    colorAttr.needsUpdate = true;
   }
-
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
 }
-
 
 function restoreToothWithNewColor(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
@@ -670,9 +675,7 @@ function eraseIntersectedArea(intersect) {
         );
       }
       if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(
-            Array.from(selectedFaceLines[selectedToothId]).filter((item) => item.faceIndex !== Math.floor(index / 3))
-        );
+        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
       }
     });
 
@@ -864,31 +867,42 @@ function colorFace(faceIndex) {
 
   colorAttr.needsUpdate = true;
 
-  if (!(selectedFaceLines[selectedToothId] instanceof Set)) {
-    selectedFaceLines[selectedToothId] = new Set();
+  // 检查并初始化 colorEntry
+  let colorEntry = toothPaintData[selectedToothId].paintData.find(
+    entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
+  );
+
+  if (!colorEntry) {
+    colorEntry = {
+      indices: [],
+      color: { r: paintColor.r, g: paintColor.g, b: paintColor.b },
+      faces: [],
+      faceLines: []
+    };
+    toothPaintData[selectedToothId].paintData.push(colorEntry);
   }
-  selectedFaceLines[selectedToothId].add({faceIndex,color: { r: paintColor.r, g: paintColor.g, b: paintColor.b }});
+
+  colorEntry.faceLines.push({ faceIndex, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
 }
 
+
 function restoreLineSelections(toothId) {
-  if(!targetMesh.geometry) return;
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
-  // 将所有顶点颜色重置为白色
-  //for (let i = 0; i < colorAttr.count; i++) {
-  //  colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
-  //}
-  if (selectedFaceLines[toothId]) {
-    selectedFaceLines[toothId].forEach(({faceIndex,color}) => {
-      const indices = targetMesh.geometry.index;
-      const i0 = indices.getX(faceIndex * 3);
-      const i1 = indices.getX(faceIndex * 3 + 1);
-      const i2 = indices.getX(faceIndex * 3 + 2);
-      colorAttr.setXYZ(i0, color.r * 255, color.g * 255, color.b * 255);
-      colorAttr.setXYZ(i1, color.r * 255, color.g * 255, color.b * 255);
-      colorAttr.setXYZ(i2, color.r * 255, color.g * 255, color.b * 255);
+
+  if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
+    toothPaintData[toothId].paintData.forEach(({ faceLines, color }) => {
+      faceLines.forEach(({ faceIndex }) => {
+        const indices = targetMesh.geometry.index;
+        const i0 = indices.getX(faceIndex * 3);
+        const i1 = indices.getX(faceIndex * 3 + 1);
+        const i2 = indices.getX(faceIndex * 3 + 2);
+        colorAttr.setXYZ(i0, color.r * 255, color.g * 255, color.b * 255);
+        colorAttr.setXYZ(i1, color.r * 255, color.g * 255, color.b * 255);
+        colorAttr.setXYZ(i2, color.r * 255, color.g * 255, color.b * 255);
+      });
     });
-    colorAttr.needsUpdate = true; // 更新颜色
+    colorAttr.needsUpdate = true;
   }
 }
 
@@ -1082,17 +1096,12 @@ function updateControls() {
     console.log("render drag")
   } else {
     controls.enableRotate = true; // 禁止旋转
-    controls.enableZoom = true;   // 禁止缩放
+    controls.enableZoom = false;   // 禁止缩放
     controls.enablePan = true;    // 禁止平移
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
     }
-    controls.domElement.addEventListener('wheel', (event) => {
-      event.preventDefault(); // 防止页面滚动
-      controls.dollyIn(Math.pow(0.95, event.deltaY * 0.1));
-      controls.update();
-    });
   }
 }
 
