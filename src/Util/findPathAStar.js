@@ -10,7 +10,7 @@ export function buildFaceAdjacencyMap(geometry) {
 
     const vertexToFaceMap = {};
 
-    // 定义一个函数来获取顶点的键，使用坐标并处理精度问题
+    // Define a function to obtain the keys of vertices, use coordinates, and handle accuracy issues
     function getVertexKey(index) {
         const x = position.getX(index);
         const y = position.getY(index);
@@ -20,17 +20,17 @@ export function buildFaceAdjacencyMap(geometry) {
         return key;
     }
 
-    // 第一步：为每个顶点建立到面的映射关系，基于顶点的位置
+    // Step 1: Establish a mapping relationship between each vertex and a face based on the vertex's position
     for (let faceIndex = 0; faceIndex < faceCount; faceIndex++) {
         let aIndex, bIndex, cIndex;
 
         if (indexAttr) {
-            // 索引几何体
+            // Index Geometry
             aIndex = indexAttr.getX(faceIndex * 3);
             bIndex = indexAttr.getX(faceIndex * 3 + 1);
             cIndex = indexAttr.getX(faceIndex * 3 + 2);
         } else {
-            // 非索引几何体
+            // Non indexed geometry
             aIndex = faceIndex * 3;
             bIndex = faceIndex * 3 + 1;
             cIndex = faceIndex * 3 + 2;
@@ -47,11 +47,11 @@ export function buildFaceAdjacencyMap(geometry) {
             vertexToFaceMap[vertexKey].push(faceIndex);
         });
 
-        // 初始化 adjacencyMap[faceIndex] 为一个空数组
+        // Initialize adjustyMap [faceIndex] as an empty array
         adjacencyMap[faceIndex] = [];
     }
 
-    // 第二步：遍历每个面，检查哪些面是相邻的（共享两条顶点=相邻边）
+    // Step 2: Traverse each face and check which faces are adjacent (sharing two vertices=adjacent edges)
     for (let faceIndex = 0; faceIndex < faceCount; faceIndex++) {
         let aIndex, bIndex, cIndex;
 
@@ -71,7 +71,7 @@ export function buildFaceAdjacencyMap(geometry) {
 
         const adjacentFaces = new Set();
 
-        // 创建一个函数来统计两个面共享的顶点数量
+        // Create a function to count the number of vertices shared by two faces
         function countSharedVertices(faceVertices, adjFaceIndex) {
             const sharedVertices = faceVertices.filter(vKey => vertexToFaceMap[vKey].includes(adjFaceIndex));
             return sharedVertices.length;
@@ -79,7 +79,7 @@ export function buildFaceAdjacencyMap(geometry) {
 
         const faceVertices = [aKey, bKey, cKey];
 
-        // 遍历每个顶点的相邻面，检查是否共享两条顶点
+        // Traverse the adjacent faces of each vertex and check if they share two vertices
         faceVertices.forEach(vertexKey => {
             vertexToFaceMap[vertexKey].forEach(adjFaceIndex => {
                 if (adjFaceIndex !== faceIndex) {
@@ -93,7 +93,7 @@ export function buildFaceAdjacencyMap(geometry) {
 
         adjacencyMap[faceIndex] = Array.from(adjacentFaces);
 
-        // 调试输出，打印前几个面的相邻关系
+        // Debugging output, printing the adjacent relationships of the first few faces
         /*if (faceIndex < 10) {
             console.log(`Face ${faceIndex} has adjacent faces: ${Array.from(adjacentFaces)}`);
             if (adjacencyMap[faceIndex].length === 0) {
@@ -121,12 +121,10 @@ export function findShortestPath(startFaceIndex, endFaceIndex, geometry, adjacen
         let a, b, c;
 
         if (indexAttr) {
-            // 索引几何体
             a = indexAttr.getX(i * 3);
             b = indexAttr.getX(i * 3 + 1);
             c = indexAttr.getX(i * 3 + 2);
         } else {
-            // 非索引几何体
             a = i * 3;
             b = i * 3 + 1;
             c = i * 3 + 2;

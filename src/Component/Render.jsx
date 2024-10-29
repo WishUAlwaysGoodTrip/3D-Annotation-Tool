@@ -13,7 +13,7 @@ import {buildFaceAdjacencyMap, findShortestPath} from '../Util/findPathAStar.js'
 const { ipcRenderer } = window.require('electron');
 
 
-// 定义一个函数，用于根据 STL 文件名生成对应的 Store 实例
+// Generate a corresponding Store instance based on the STL file name
 function createAnnotationStore(stlFilename) {
   const filenameWithoutExtension = path.basename(stlFilename, '.stl');
   return new Store({
@@ -22,22 +22,21 @@ function createAnnotationStore(stlFilename) {
   });
 }
 
-// 将 BVH 加速结构的算法方法绑定到 Three.js
+// Bind the algorithm method of BVH acceleration structure to Three.js
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
-// 全局变量声明
 let targetMesh;
 let scene, camera, renderer, controls;
 let cursorCircle, cursorCircleMaterial;
 let isPainting = false;
-let threeMode = 'dragging'; // 默认模式为拖拽
-let gui; // 全局 GUI 变量
-let annotationColors = {}; // 保存每个注释的颜色数据
-let toothPaintData = {}; // 保存每个牙齿 ID 对应的涂色数据\
+let threeMode = 'dragging'; // The default mode is drag and drop
+let gui; 
+let annotationColors = {}; // Save color data for each annotation
+let toothPaintData = {}; // Save the color data corresponding to each tooth ID
 let anotationlistname
-let selectedToothId; // 当前选择的牙齿 ID
+let selectedToothId; // The currently selected tooth ID
 let selectedPoint;
 let annotationStore;
 let selectedPoints = []; // Array to store all highlight points
@@ -46,7 +45,7 @@ let previousSelectedFace = null;
 let previousToothId = null;
 let previousToothColor = null;
 let adjacencyMap = null;
-let paintColor = new THREE.Color(255, 0, 0); // 默认绘制颜色为红色
+let paintColor = new THREE.Color(255, 0, 0); // The default color for drawing is red
 let edgeLines = null; //edge lines in paint mode
 
 
@@ -74,17 +73,17 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
 
   const updateCursorShape = (shape) => {
     if (cursorCircle) {
-      scene.remove(cursorCircle);  // 移除之前的光标
+      scene.remove(cursorCircle);  
     }
-    createCursorCircle(shape);  // 创建新的光标
+    createCursorCircle(shape); 
   };
   
 
   useEffect(() => {
-    init(); // 初始化 Three.js 场景
+    init(); 
     window.addEventListener('resize', onWindowResize);
 
-    // 清除事件监听器和 Three.js 渲染器
+    // Clear event listener and Three.js renderer
     return () => {
       window.removeEventListener('resize', onWindowResize);
       window.removeEventListener('pointermove', onPointerMove);
@@ -97,8 +96,8 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   }, []);
 
   useEffect(() => { 
-    // // 加载持久化存储的注释和牙齿颜色数据
-    // console.log('toothPaintData Color2131312s:', toothPaintData); // 调试输出
+    // // Load persistently stored annotations and tooth color data
+    // console.log('toothPaintData Color2131312s:', toothPaintData); 
 
     // if (annotationStore) {
     //   // annotationColors = annotationStore.get('annotationColors') || {};
@@ -106,18 +105,18 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
     // } else {
     //   console.warn('annotationStore is not defined');
     // }
-    // console.log('toothPaintData Colors:', toothPaintData); // 调试输出
+    // console.log('toothPaintData Colors:', toothPaintData); 
     threeMode = mode;
-    updateControls(); // 根据新的 mode 更新控制
-    updateEventListeners(); // 更新事件监听器
+    updateControls(); 
+    updateEventListeners(); 
   }, [mode]);
 
-     // 监听 file 的变化并加载 STL 模型
+     // Monitor file changes and load STL model
   // useEffect(() => {
   //   if (file) {
-  //     loadModel(file); // 加载传入的 STL 文件
+  //     loadModel(file); // Load the incoming STL file
   //   }
-  // }, [file]); // 当 file 变化时调用
+  // }, [file]); // Call when file changes
   useEffect(() => {
     if (file) {
       console.log('File:', file);
@@ -126,7 +125,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
         annotationColors = annotationStore.get('annotationColors') || {};
         toothPaintData = annotationStore.get('toothPaintData') || {};
   
-        // 确保 `toothPaintData` 符合新的结构
+        // Ensure that 'toothPaintData' conforms to the new structure
         Object.keys(toothPaintData).forEach((toothId) => {
           const data = toothPaintData[toothId];
           if (!data.annotations) {
@@ -137,7 +136,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
           }
         });
   
-        loadModel(file); // 加载传入的 STL 文件
+        loadModel(file); // Load the incoming STL file
       } else {
         console.warn('Failed to create annotationStore');
       }
@@ -149,41 +148,41 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   useEffect(() => {
     if (annotationName) {
       anotationlistname = annotationName;
-      // restoreAnnotationColors(annotationName); // 恢复注释的颜色
-      restoreAnnotation(annotationName,teethData); // 恢复注释的颜色
+      // restoreAnnotationColors(annotationName);
+      restoreAnnotation(annotationName,teethData); // Restore the color of annotations
     }
-  }, [annotationName]); // 当 brushColor 或 annotationName 变化时调用
+  }, [annotationName]); // Call when brushColor or annotationName changes
 
   useEffect(() => {
     if (toothId) {
       if (previousToothId !== toothId) {
-        // 如果 ID 发生变化，执行恢复原有颜色的函数
+        // If the ID changes, execute the function to restore the original color
         selectedToothId = toothId;
-        updatePaintColor(toothColor); // 更新绘制颜色
-        restoreToothColors(selectedToothId); // 恢复涂色
+        updatePaintColor(toothColor); // Update drawing color
+        restoreToothColors(selectedToothId); // Restore coloring
         restoreLineSelections(selectedToothId)
         console.log("ID changed, restoring tooth color:", toothColor, selectedToothId);
       } else if (previousToothColor !== toothColor) {
-        // 如果颜色变化但 ID 未变化，执行新的颜色更新函数
-        updatePaintColor(toothColor); // 更新绘制颜色
-        restoreToothWithNewColor(toothId); // 用新的颜色对牙齿进行着色
+        // If the color changes but the ID remains unchanged, execute a new color update function
+        updatePaintColor(toothColor); // Update drawing color
+        restoreToothWithNewColor(toothId); // Coloring teeth with new colors
         restoreLineSelections(toothId)
         console.log("Color changed, updating tooth with new color:", toothColor, toothId);
       }
   
-      // 更新 previousToothId 和 previousToothColor
+      // Update previewToothId and previewToothColor
       previousToothId = toothId;
       previousToothColor = toothColor;
     }
-  }, [toothColor, toothId]); // 当 toothColor 或 toothId 变化时调用
+  }, [toothColor, toothId]); // Call when toothColor or toothId changes
 
   useEffect(() => {
     if (teethData && teethData.length > 0) {
-      // 遍历 teethData，将 annotations 合并到 toothPaintData 中
+      // Traverse teethData and merge annotations into toothPaintData
       teethData.forEach((tooth) => {
         const { id, annotations } = tooth;
   
-        // 如果 `toothPaintData` 中没有该牙齿的数据，初始化为空对象
+        // If there is no data for the tooth in 'toothPaintData', initialize as an empty object
         if (!toothPaintData[id]) {
           toothPaintData[id] = {
             annotations: [],
@@ -191,27 +190,27 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
           };
         }
   
-        // 提取 annotations 中的名称
+        // Extract names from annotations
         const annotationNames = annotations.map(annotation => annotation.name);
   
-        // 使用 Set 去重，将 annotations 数组中的名称与 toothPaintData 中已有的名称合并
+        // Use Set to remove duplicates and merge the names in the annotations array with the names already in toothPaintData
         const existingAnnotationNames = new Set(toothPaintData[id].annotations);
         annotationNames.forEach((name) => existingAnnotationNames.add(name));
   
-        // 更新 toothPaintData 中的 annotations 为去重后的名称数组
+        // Update annotations in toothPaintData to the deduplicated name array
         toothPaintData[id].annotations = Array.from(existingAnnotationNames).filter(name => name !== undefined);
       });
     }
-  }, [teethData]); // 当 teethData 变化时调用
+  }, [teethData]); // Call when teethData changes
   
   
 
   useEffect(() => {
-    // 保存数据事件处理函数
+    // Save data event handling function
     function handleSaveData() {
-      // 保存数据到持久化存储
+      // Save data to persistent storage
       if (annotationStore) {
-        annotationStore.set('toothPaintData', toothPaintData); // 保存新的数据结构
+        annotationStore.set('toothPaintData', toothPaintData); // Save new data structure
   
         console.log('Annotation and tooth paint data saved.');
         ipcRenderer.send('save-complete');
@@ -220,16 +219,14 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
       }
     }
 
-    // 监听 save-data 信号
     ipcRenderer.on('save-data', handleSaveData);
   
-    // 清除事件监听器
     return () => {
       ipcRenderer.removeListener('save-data', handleSaveData);
     };
   }, [annotationStore, toothPaintData]);
   
-  // 使用 useEffect 监听 cursorOpacity 并调用 debounce 函数
+  // Use useEffect to listen to cursorOpacity and call debounce function
   useEffect(() => {
     updateOpacity(cursorOpacity);
   }, [cursorOpacity]);
@@ -248,16 +245,16 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
 //    }
 //  }, [cursorShape]); 
 
-  // 监听 cursorShape 的变化，但保持其他状态不变
+  // Monitor changes in cursorShape while keeping other states unchanged
   useEffect(() => {
     if (cursorShape) {
-      updateCursorShape(cursorShape);  // 只更新光标形状
+      updateCursorShape(cursorShape);  // Only update cursor shape
     }
-    // 还可以手动调用 updateOpacity、updateColor 和 updateSize，以确保这些属性不变
+    // Manually call updateOpacity, updateColor, and updateSize to ensure that these properties remain unchanged
     updateOpacity(cursorOpacity);
     updateColor(cursorColor);
     updateSize(cursorSize);
-}, [cursorShape]);  // 监听 cursorShape 变化
+}, [cursorShape]);  // Monitor changes in cursorShape
 
   useEffect(() => {
     if(targetMesh){
@@ -266,20 +263,20 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   }, [wireFrame]);
 
 
-  return null; // 不需要 React 组件的 DOM 输出，因为渲染完全由 Three.js 控制
+  return null; // No need for DOM output from React components, as rendering is completely controlled by Three.js
 };
 
 
 
-// 初始化场景和 Three.js 渲染器
+// Initialize the scene and Three.js renderer
 function init() {
   scene = new THREE.Scene();
 
-  // 设置相机
+  // Set camera
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 50, 100);
 
-  // 设置渲染器
+  // Set up renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -287,34 +284,34 @@ function init() {
   renderer.outputEncoding = THREE.sRGBEncoding;
   document.body.appendChild(renderer.domElement);
 
-  // 设置相机控制器
+  // Set camera controller
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableZoom = true;
   controls.zoomSpeed = 1.0;
   controls.enableRotate = true;
-  controls.rotateSpeed = 2.0; // 提高旋转速度
+  controls.rotateSpeed = 2.0; // Increase rotation speed
   controls.enablePan = true;
-  controls.screenSpacePanning = false; // 确保拖拽方向正确
+  controls.screenSpacePanning = false; // Ensure that the drag direction is correct
 
-  // 解除极限角度限制
-  controls.minPolarAngle = 0; // 最小极限角度
-  controls.maxPolarAngle = Math.PI; // 最大极限角度
+  // Release the limit angle restriction
+  controls.minPolarAngle = 0; 
+  controls.maxPolarAngle = Math.PI; 
 
-  // 允许水平旋转无限制
+  // Allow unlimited horizontal rotation
   controls.minAzimuthAngle = -Infinity; 
   controls.maxAzimuthAngle = Infinity;
 
-  // 设置惯性阻尼
-  controls.enableDamping = true; // 启用惯性阻尼
-  controls.dampingFactor = 0.1; // 阻尼系数
+  // Set inertia damping
+  controls.enableDamping = true; 
+  controls.dampingFactor = 0.1; 
 
-  // 禁用默认的旋转目标限制
-  controls.target.set(0, 0, 0); // 将目标点设置为模型的中心
+  // Disable default rotation target restrictions
+  controls.target.set(0, 0, 0); // Set the target point as the center of the model
   controls.enableRotate = true;
 
-  controls.update(); // 更新控制器
+  controls.update(); 
 
-  // 添加光源
+  // Add light source
   const mainLight = new THREE.DirectionalLight(0xffffff, 0.5);
   mainLight.position.set(1, 1, 1);
   scene.add(mainLight);
@@ -323,18 +320,17 @@ function init() {
   scene.add(fillLight);
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-  createCursorCircle(); // 创建指示器
-  animate(); // 启动动画循环
-  // addGUI(); // 添加 GUI 控制
+  createCursorCircle(); // Create indicator
+  animate(); 
+  // addGUI(); 
 
-  // 添加事件监听器
   updateEventListeners();
 }
 
-// 加载 STL 模型
+// Load STL model
 function loadModel(file) {
   const loader = new STLLoader();
-  const fileURL = URL.createObjectURL(file); // 将文件转换为URL
+  const fileURL = URL.createObjectURL(file); // Convert files to URLs
   if (targetMesh) {
     scene.remove(targetMesh);
     targetMesh.geometry.dispose();
@@ -344,24 +340,24 @@ function loadModel(file) {
   loader.load(fileURL, function (geometry) {
     geometry.computeBoundsTree();
 
-    // 检查几何体是否已有颜色属性，如果有，直接使用
+    // Check if the geometry already has color attributes, and if so, use them directly
     let colorAttr = geometry.getAttribute('color');
     if (!colorAttr) {
-      // 如果没有颜色属性，初始化为白色
+      // If there is no color attribute, initialize to white
       const colorArray = new Uint8Array(geometry.attributes.position.count * 3);
-      colorArray.fill(255); // 设置为白色
+      colorArray.fill(255); 
       colorAttr = new THREE.BufferAttribute(colorArray, 3, true);
       geometry.setAttribute('color', colorAttr);
     }
 
-    // 保存原始颜色（无论是已有的还是新建的）
+    // Save the original color (whether existing or newly created)
     const originalColors = new Float32Array(colorAttr.array.length);
     for (let i = 0; i < colorAttr.array.length; i++) {
-      originalColors[i] = colorAttr.array[i] / 255; // 转换为 0-1 范围
+      originalColors[i] = colorAttr.array[i] / 255; 
     }
-    geometry.userData.originalColors = originalColors; // 保存到 userData 中
+    geometry.userData.originalColors = originalColors; // Save to userData
     
-    // 创建材质并启用顶点颜色
+    // Create materials and enable vertex colors
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.3,
@@ -369,29 +365,29 @@ function loadModel(file) {
       vertexColors: true,
     });
 
-    // 创建网格对象
+    // Create a grid object
     targetMesh = new THREE.Mesh(geometry, material);
     adjacencyMap = buildFaceAdjacencyMap(geometry);
 
-    // 计算模型的边界盒并将其居中
+    // Calculate the boundary box of the model and center it
     const boundingBox = new THREE.Box3().setFromObject(targetMesh);
     const center = new THREE.Vector3();
     boundingBox.getCenter(center);
     targetMesh.position.sub(center);
 
-    targetMesh.rotation.x = -Math.PI / 2; // 绕 X 轴旋转 90 度
-    // 再次调整位置以确保模型仍然在中心
+    targetMesh.rotation.x = -Math.PI / 2; // Rotate 90 degrees around the X-axis
+    // Adjust the position again to ensure that the model is still centered
     boundingBox.setFromObject(targetMesh);
     boundingBox.getCenter(center);
     targetMesh.position.sub(center);
 
     scene.add(targetMesh);
 
-    // 模型加载完毕后，恢复注释和牙齿颜色
+    // After the model is loaded, restore the annotations and tooth color
     if (annotationColors) {
       Object.keys(annotationColors).forEach((annotationName) => {
         // restoreAnnotationColors(annotationName);
-        // restoreAnnotation(annotationName,teethData); // 恢复注释的颜色
+        // restoreAnnotation(annotationName,teethData); 
       });
     }
 
@@ -403,7 +399,7 @@ function loadModel(file) {
   });
 }
 
-// 绘制选定区域
+// Draw the selected area
 function paintIntersectedArea(intersect, annotationName) {
   const indices = [];
   const tempVec = new THREE.Vector3();
@@ -433,12 +429,12 @@ function paintIntersectedArea(intersect, annotationName) {
     annotationColors[annotationName] = new Set();
   }
 
-  // 检查并初始化 colorEntry
+  // Check and initialize colorEntry
   let colorEntry = toothPaintData[selectedToothId].paintData.find(
     entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
   );
 
-  // 如果没有找到对应的颜色 entry，创建一个新的
+  // If no corresponding color entry is found, create a new one
   if (!colorEntry) {
     colorEntry = {
       indices: [],
@@ -453,7 +449,7 @@ function paintIntersectedArea(intersect, annotationName) {
     toothPaintData[selectedToothId].annotations.push(annotationName);
   }
 
-  // 添加选中区域的索引
+  // Add an index to the selected area
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
@@ -469,32 +465,32 @@ function paintIntersectedArea(intersect, annotationName) {
 
 function restoreAnnotation(annotationName, teethData) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
-  console.log("Restoring annotation colors for:", annotationName); // 调试输出
-  console.log("Teeth Data:", teethData); // 调试输出
+  console.log("Restoring annotation colors for:", annotationName); 
+  console.log("Teeth Data:", teethData); 
 
-  // 检查 colorAttr 是否存在
+  // Check if colorAttr exists
   if (!colorAttr) {
     console.warn('No color attribute found on geometry.');
     return;
   }
 
-  // 将所有顶点颜色重置为白色
+  // Reset all vertex colors to white
   for (let i = 0; i < colorAttr.count; i++) {
-    colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+    colorAttr.setXYZ(i, 1, 1, 1); // Set to white
   }
 
-  // 遍历每个牙齿数据，根据注释名称恢复颜色
+  // Traverse each tooth data and restore color based on annotation names
   teethData.forEach((tooth) => {
-    // 检查牙齿是否包含指定的注释名称
+    // Check if the teeth contain the specified annotation name
     if (tooth.annotations.includes(annotationName)) {
       const paintData = toothPaintData[tooth.id]?.paintData;
       
       if (Array.isArray(paintData)) {
         paintData.forEach(({ indices, color }) => {
-          // 确保 color 存在并且 indices 是数组
+          // Ensure that color exists and indices are an array
           if (color && Array.isArray(indices)) {
             indices.forEach((index) => {
-              // 将颜色恢复到指定的 index 位置
+              // Restore the color to the specified index position
               colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
             });
           }
@@ -503,7 +499,7 @@ function restoreAnnotation(annotationName, teethData) {
     }
   });
 
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  colorAttr.needsUpdate = true; 
 }
 
 
@@ -513,10 +509,9 @@ function restoreAnnotation(annotationName, teethData) {
 //     console.warn('No color attribute found on geometry.');
 //     return;
 //   }
-//   console.log("Restoring tooth colors for:", toothId); // 调试输出
-//   // 清除当前颜色，恢复到白色
+//   console.log("Restoring tooth colors for:", toothId);
 //   for (let i = 0; i < colorAttr.count; i++) {
-//     colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+//     colorAttr.setXYZ(i, 1, 1, 1); 
 //   }
 
 //   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
@@ -534,7 +529,7 @@ function restoreAnnotation(annotationName, teethData) {
 //       });
 //     });
 
-//   colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+//   colorAttr.needsUpdate = true; 
 // }}
 function restoreToothColors(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
@@ -557,14 +552,14 @@ function restoreToothWithNewColor(toothId) {
     return;
   }
 
-  // 清除当前颜色，恢复为白色
+  // Clear the current color and restore it to white
   for (let i = 0; i < colorAttr.count; i++) {
-    colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+    colorAttr.setXYZ(i, 1, 1, 1);
   }
 
-  console.log("Restoring tooth colors for:", paintColor); // 调试输出
+  console.log("Restoring tooth colors for:", paintColor); 
 
-  // 如果存在与当前牙齿 ID 相关的涂色数据，则恢复这些数据
+  // If there is color data related to the current tooth ID, restore these data
   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
     toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
       if (Array.isArray(indices) && color) {
@@ -575,7 +570,7 @@ function restoreToothWithNewColor(toothId) {
     });
   }
 
-  // 更新 `paintData` 中的颜色信息，以应用新的 `paintColor`
+  // Update the color information in 'paintData' to apply the new 'paintColor'`
   if (toothPaintData[toothId]) {
     toothPaintData[toothId].paintData = toothPaintData[toothId].paintData.map(({ indices }) => ({
       indices: indices,
@@ -583,32 +578,31 @@ function restoreToothWithNewColor(toothId) {
     }));
   }
 
-  colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+  colorAttr.needsUpdate = true;
 }
 
 
 
-// 更新绘制颜色
+// Update drawing color
 function updatePaintColor(color) {
-  // console.log("Update Paint Color:", color); // 调试输出
-  // 如果 color 是字符串（如 #ffffff），需要将其转换为 THREE.Color
+  // console.log("Update Paint Color:", color); 
+  // If color is a string (such as # ffffff), it needs to be converted to THREE Color
   if (typeof color === 'string') {
     paintColor.set(color);
-    // console.log("Paint Color:", paintColor); // 调试输出
-
+    // console.log("Paint Color:", paintColor); 
     const r = Math.round(paintColor.r * 255);
     const g = Math.round(paintColor.g * 255);
     const b = Math.round(paintColor.b * 255);
 
     paintColor.setRGB(r, g, b);  
-    // console.log("Paint Color:", paintColor); // 调试输出
+    // console.log("Paint Color:", paintColor); 
   } else {
     paintColor = color;
 
   }
 }
 
-// 擦除选定区域，恢复为物体的原始颜色
+// Erase the selected area to restore the original color of the object
 function eraseIntersectedArea(intersect) {
   const indices = [];
   const tempVec = new THREE.Vector3();
@@ -653,11 +647,11 @@ function eraseIntersectedArea(intersect) {
     }
   });
 
-  // 获取几何体的颜色属性和保存的原始颜色
+  // Retrieve the color properties of the geometry and save the original color
   const colorAttr = targetMesh.geometry.getAttribute('color');
   const originalColors = targetMesh.geometry.userData.originalColors;
 
-  // 使用异步批量更新原始颜色
+  // Use asynchronous batch updating of raw colors
   setTimeout(() => {
     indices.forEach((index) => {
       const idx = targetMesh.geometry.index.getX(index);
@@ -668,7 +662,7 @@ function eraseIntersectedArea(intersect) {
         originalColors[idx * 3 + 2]
       );
 
-      // 移除 `paintData` 中对应的 index
+      // Remove the corresponding index from 'paintData'
       if (toothPaintData[selectedToothId] && Array.isArray(toothPaintData[selectedToothId].paintData)) {
         toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
           (paint) => paint.index !== idx
@@ -679,23 +673,23 @@ function eraseIntersectedArea(intersect) {
       }
     });
 
-    colorAttr.needsUpdate = true; // 通知 Three.js 更新颜色
+    colorAttr.needsUpdate = true; // Notify Three.js to update colors
   }, 0);
 
 }
 
 
-// 创建指示器圆形
+// Create indicator circle
 //function createCursorCircle() {
   //const geometry = new THREE.CircleGeometry(5, 32);
   //cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
   //cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
 
-//  cursorCircle.position.z = 1; // 初始位置
+//  cursorCircle.position.z = 1;
 //scene.add(cursorCircle);
 //}
 
-// 创建指示器圆形或矩形
+// Create indicator circles or rectangles
 function createCursorCircle(cursorShape) {
 
   let geometry;
@@ -709,11 +703,11 @@ function createCursorCircle(cursorShape) {
   cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5, depthTest:false });
   cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
   cursorCircle.renderOrder =1;
-  cursorCircle.position.z = 1; // 初始位置
+  cursorCircle.position.z = 1; 
   scene.add(cursorCircle);
 }
 
-// 更新指示器圆形的朝向
+// Update the orientation of the indicator circle
 function updateCursorCircleOrientation() {
   const cameraDirection = new THREE.Vector3();
   camera.getWorldDirection(cameraDirection);
@@ -721,10 +715,10 @@ function updateCursorCircleOrientation() {
   cursorCircle.lookAt(camera.position.clone().add(cameraDirection));
 }
 
-// 窗口大小调整事件处理
+// Window size adjustment event handling
 function onWindowResize() {
   if (camera && renderer) {
-    // 更新相机的宽高比
+    // Update the aspect ratio of the camera
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -732,7 +726,7 @@ function onWindowResize() {
   }
 }
 
-// 鼠标移动事件处理
+// Mouse movement event handling
 function onPointerMove(e) {
   if (threeMode === 'painting' || threeMode === 'erasing') {
     const mouse = new THREE.Vector2();
@@ -742,7 +736,7 @@ function onPointerMove(e) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    // 检查 targetMesh 是否已定义
+    // Check if the targetMesh has been defined
     if (targetMesh) {
       const intersects = raycaster.intersectObject(targetMesh, true);
       if (intersects.length > 0) {
@@ -769,9 +763,9 @@ function onPointerMove(e) {
 
 
 
-// 鼠标按下事件处理
+// Mouse press event handling
 function onPointerDown(e) {
-  if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
+  if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { 
     isPainting = true;
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -780,15 +774,15 @@ function onPointerDown(e) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    // 检查是否点击在模型上
+    // Check if the click is on the model
     if (targetMesh) {
       const intersects = raycaster.intersectObject(targetMesh, true);
       if (intersects.length > 0) {
         const intersect = intersects[0];
         if (threeMode === 'painting') {
-          paintIntersectedArea(intersect, anotationlistname); // 直接涂色
+          paintIntersectedArea(intersect, anotationlistname); 
         } else if (threeMode === 'erasing') {
-          eraseIntersectedArea(intersect); // 直接擦除
+          eraseIntersectedArea(intersect); 
         }
       }
     }
@@ -800,7 +794,7 @@ function onPointerDown(e) {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    // 检查是否点击在模型上
+    // Check if the click is on the model
     if (targetMesh) {
       const intersects = raycaster.intersectObject(targetMesh, true);
       if (intersects.length > 0) {
@@ -825,27 +819,27 @@ function onPointerDown(e) {
 
       if (intersects.length > 0) {
         const intersect = intersects[0];
-        const faceIndex = intersect.faceIndex; // 获取点击的面索引
+        const faceIndex = intersect.faceIndex; // Get the index of clicked faces
 
-        // 着色点击的面
+        // Coloring the clicked surface
         colorFace(faceIndex);
 
         if (previousSelectedFace != null && e.ctrlKey) {
-          // 如果按下了 Ctrl，找到最短路径并着色
+          // If Ctrl is pressed, find the shortest path and color it
           const pathFaces = findShortestPath(previousSelectedFace, faceIndex, targetMesh.geometry, adjacencyMap);
           pathFaces.forEach(idx => {
             colorFace(idx);
           });
         }
 
-        previousSelectedFace = faceIndex; // 更新上一个选择的面
+        previousSelectedFace = faceIndex; // Update the previous selected face
       }
     }
   }
 }
 
 
-// 鼠标松开事件处理
+// Mouse Release Event Handling
 function onPointerUp(e) {
   if ((threeMode === 'painting' || threeMode === 'erasing') && e.button === 0) { // 左键
     isPainting = false;
@@ -867,7 +861,7 @@ function colorFace(faceIndex) {
 
   colorAttr.needsUpdate = true;
 
-  // 检查并初始化 colorEntry
+  // Check and initialize colorEntry
   let colorEntry = toothPaintData[selectedToothId].paintData.find(
     entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
   );
@@ -953,9 +947,9 @@ function createHighlightPoint(intersect) {
   const indexAttribute = targetMesh.geometry.getIndex();
 
   let totalArea = 0;
-  const faceCount = indexAttribute.count / 3; // 每3个索引为一个面
+  const faceCount = indexAttribute.count / 3; // Every 3 indices form a face
 
-  // 遍历每个面，计算面积并累加
+  // Traverse each face, calculate the area and accumulate it
   for (let i = 0; i < faceCount; i++) {
     const a = indexAttribute.getX(i * 3);
     const b = indexAttribute.getX(i * 3 + 1);
@@ -965,14 +959,14 @@ function createHighlightPoint(intersect) {
     const vB = new THREE.Vector3().fromBufferAttribute(positionAttribute, b);
     const vC = new THREE.Vector3().fromBufferAttribute(positionAttribute, c);
 
-    // 使用三角形面积公式计算每个面的面积
+    // Calculate the area of each face using the triangle area formula
     const area = new THREE.Triangle(vA, vB, vC).getArea();
     totalArea += area;
   }
 
-  // 计算平均面面积
+  // Calculate the average surface area
   const averageFaceArea = totalArea / faceCount;
-  const pointSize = Math.sqrt(averageFaceArea) * 0.2; // 使用平方根比例调整大小
+  const pointSize = Math.sqrt(averageFaceArea) * 0.2; // Adjust size using the square root ratio
 
   // Find the nearest vertex to the intersection point
   const nearestVertexPosition = findNearestVertex(intersect);
@@ -1036,19 +1030,19 @@ function addEdgesToScene() {
 
 // function addGUI() {
 //   if (gui) {
-//     gui.destroy(); // 如果已有 GUI 实例，销毁旧实例
+//     gui.destroy(); 
 //   }
 
-//   gui = new GUI(); // 创建新的 GUI 实例
+//   gui = new GUI(); 
 //   const params = {
 //     threeMode: 'dragging',
 //     cursorOpacity: cursorCircleMaterial.opacity,
 //     cursorColor: cursorCircleMaterial.color.getHex(),
 //     cursorSize: 2,
-//     renderColor: `#${paintColor.getHexString()}`, // 设置绘制颜色
+//     renderColor: `#${paintColor.getHexString()}`,
 //   };
 
-//   // 只创建 "Cursor Circle" 和 "Render Color" 控件，而不包括模式切换控件
+//   // Only create 'cursor circle' and 'render color' controls, excluding mode switching controls
 //   const cursorFolder = gui.addFolder('Cursor Circle');
 //   cursorFolder
 //     .add(params, 'cursorOpacity', 0, 1)
@@ -1064,7 +1058,7 @@ function addEdgesToScene() {
 //     .onChange((value) => {
 //       cursorCircle.scale.set(value / 5, value / 5, value / 5);
 //     });
-//   cursorFolder.close(); // 确保 "Cursor Circle" 文件夹默认展开 
+//   cursorFolder.close(); // Ensure that the 'cursor circle' folder is expanded by default
 
 //   const renderFolder = gui.addFolder('Render Color');
 //   renderFolder
@@ -1082,12 +1076,12 @@ function addEdgesToScene() {
 //   renderFolder.open();
 // }
 
-// 更新控制
+// update control
 function updateControls() {
   if (threeMode === 'dragging') {
-    controls.enableRotate = true; // 允许旋转
-    controls.enableZoom = true;   // 允许缩放
-    controls.enablePan = true;    // 允许平移
+    controls.enableRotate = true; 
+    controls.enableZoom = true; 
+    controls.enablePan = true;   
     controls.mouseButtons = {
       LEFT: THREE.MOUSE.ROTATE,
       MIDDLE: THREE.MOUSE.DOLLY,
@@ -1095,9 +1089,9 @@ function updateControls() {
     }
     console.log("render drag")
   } else {
-    controls.enableRotate = true; // 禁止旋转
-    controls.enableZoom = false;   // 禁止缩放
-    controls.enablePan = true;    // 禁止平移
+    controls.enableRotate = true;
+    controls.enableZoom = false;  
+    controls.enablePan = true;   
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
@@ -1105,31 +1099,30 @@ function updateControls() {
   }
 }
 
-// 更新事件监听器
+// Update event listener
 function updateEventListeners() {
   window.removeEventListener('pointermove', onPointerMove, false);
   window.removeEventListener('pointerdown', onPointerDown, false);
   window.removeEventListener('pointerup', onPointerUp, false);
 
   if (threeMode === 'painting' || threeMode === 'erasing') {
-    // 添加绘画和擦除模式的事件监听器
     window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     window.addEventListener('pointerup', onPointerUp, false);
-    console.log(`render ${threeMode}`); // 输出当前模式
+    console.log(`render ${threeMode}`);
 
   } else if (threeMode === 'point'|| threeMode === 'line') {
     //window.addEventListener('pointermove', onPointerMove, false);
     window.addEventListener('pointerdown', onPointerDown, false);
     document.body.style.cursor = 'default';
-    console.log(`render ${threeMode}`); // 输出当前模式
+    console.log(`render ${threeMode}`); 
   } else {
-    // 其他模式下不需要特殊的事件处理，只需要恢复默认光标
+    // In other modes, no special event handling is required, only the default cursor needs to be restored
     document.body.style.cursor = 'default';
   }
 }
 
-// 动画循环
+// Animation Loop
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);

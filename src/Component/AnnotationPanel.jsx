@@ -29,12 +29,12 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   const [editedAnnotation, setEditedAnnotation] = useState('');
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
-  const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // 用于存储高亮的牙齿ID
+  const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // Store highlighted tooth IDs
   const [isEditing, setIsEditing] = useState(false); 
   const [teeth, setTeeth] = useState(() =>
     Array.from({ length: 16 }, (_, i) => ({
       id: i + 1,
-      color: '#ffffff', // 默认颜色
+      color: '#ffffff', // Default color
       annotations: [],
     }))
   );
@@ -66,29 +66,29 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   useEffect(() => {
     console.log('useEffect triggered');
     if (file) {
-      // 创建 annotationStore 实例
+      // Create an AnnotateStore instance
       annotationStore = createAnnotationStore(file.name);
       if (annotationStore) {
-        // 获取存储中的 toothPaintData
+        // Retrieve toothPaintData
         const storedToothPaintData = annotationStore.get('toothPaintData') || {};
         console.log('Stored Tooth Paint Data:', storedToothPaintData);
   
-        // 获取存储中的 annotations
+        // Retrieve annotations from the storage
         const storedAnnotations = Object.values(storedToothPaintData).flatMap(
           (tooth) => tooth.annotations || []
         );
   
-        // 合并存储中的 annotations，避免重复，并确保初始值 'ADD...' 不被包含在合并中
+        // Merge annotations from storage to avoid duplication and ensure initial values of 'ADD...' Not included in the merge
         const combinedAnnotations = [...new Set(storedAnnotations.filter(
           (storedAnnotation) => storedAnnotation !== 'ADD...' && storedAnnotation !== null
         ))];
 
         setAnnotations([...combinedAnnotations.map((annotation) => ({
           name: annotation,
-          color: '#af2828', // 默认颜色，如果需要可从其他地方获取颜色信息
+          color: '#af2828', // Default color, color information can be obtained from elsewhere if needed
         })), { name: 'ADD...', color: '#af2828' }]);
 
-         // 格式化 teeth 数据
+         // Format tee data
          const formattedTeethData = Array.from({ length: 16 }, (_, i) => {
           const toothId = i + 1;
           const storedToothData = storedToothPaintData[toothId] || {};
@@ -96,30 +96,30 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
             id: toothId,
             color: storedToothData.paintData?.[0]?.color 
               ? `#${((1 << 24) + (storedToothData.paintData[0].color.r << 16) + (storedToothData.paintData[0].color.g << 8) + storedToothData.paintData[0].color.b).toString(16).slice(1)}` 
-              : '#ffffff', // 从 paintData 中取第一个颜色作为默认颜色，格式化为 #RRGGBB
-            annotations: storedToothData.annotations || [], // 如果存储中没有 annotations，使用空数组
+              : '#ffffff', // Take the first color from PaintData as the default color and format it as # RRGGBB
+            annotations: storedToothData.annotations || [], // If there are no annotations in the storage, use an empty array
           };
         });
   
-        // 更新 teeth 状态
+        // Update teeth status
         setTeeth(formattedTeethData);
         console.log('Formatted Teeth Data:', formattedTeethData);
 
-        // 根据 paintData 的值更新 highlightedTeeth
+        // Update highlightedTeeth based on the value of paintData
         const newHighlightedTeeth = new Set();
         for (const toothId in storedToothPaintData) {
           if (storedToothPaintData[toothId].paintData && storedToothPaintData[toothId].paintData.length > 0) {
             newHighlightedTeeth.add(toothId);
           }
         }
-        setHighlightedTeeth(newHighlightedTeeth); // 更新 highlightedTeeth
+        setHighlightedTeeth(newHighlightedTeeth); // Update highlightedTeeth
 
       }
     }
   }, [file]);
 
   const handleEditButtonClick = () => {
-    setIsEditing(!isEditing); // 切换编辑模式
+    setIsEditing(!isEditing); // Switch editing mode
   };
 
   const handleAddTooth = () => {
@@ -149,13 +149,13 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   
   const handleRemoveTooth = (id) => {
     setTeeth(prevTeeth => prevTeeth.filter(tooth => tooth.id !== id));
-    setSelectedToothId(null); // 取消选择被删除的牙齿
+    setSelectedToothId(null); // Deselect deleted teeth
   };
 
 
   useEffect(() => {
     const handleWindowResize = () => {
-      setListHeight(window.innerHeight * 0.55); // 根据窗口高度设置列表高度
+      setListHeight(window.innerHeight * 0.55); 
     };
 
     window.addEventListener('resize', handleWindowResize);
@@ -165,7 +165,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
     };
   }, []);
 
-    // 每次 teeth 数据变化时，将数据传递给父组件
+    // Pass the data to the parent component every time the teeth data changes
     useEffect(() => {
       onTeethDataChange(teeth);
     }, [teeth]);
@@ -186,7 +186,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
     } else {
       setShowAddInput(false);
       if (selectedAnn) {
-        onColorChange(selectedAnn.color, selectedAnn.name); // 调用回调函数，传递颜色和名字
+        onColorChange(selectedAnn.color, selectedAnn.name); // Call callback function, pass color and name
       }
     }
   };
@@ -196,7 +196,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
     updatedAnnotations[index].color = color;
     setAnnotations(updatedAnnotations);
   
-    // 检查当前选择的注释名称是否匹配，然后更新颜色
+    // Check if the currently selected annotation name matches, and then update the color
     if (selectedAnnotation && updatedAnnotations[index].name === selectedAnnotation.name) {
       onColorChange(color, updatedAnnotations[index].name);
     }
@@ -212,7 +212,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
             annotations: [...tooth.annotations]
           };
 
-          // 如果当前有选择的注释，添加到牙齿注释中
+          // If there are currently selected annotations, add them to the teeth annotation
           if (selectedAnnotation && selectedAnnotation.name !== 'ADD...' && !updatedTooth.annotations.includes(selectedAnnotation.name)) {
             updatedTooth.annotations.push(selectedAnnotation.name);
           }
@@ -227,7 +227,7 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
     setSelectedToothId(id);
     // console.log('selectedAnnotation', selectedAnnotation);
 
-    // 传递牙齿ID和新颜色给父组件（Render组件）                         
+    // Pass the tooth ID and new color to the parent component (Render component)                         
     const tooth = teeth.find(tooth => tooth.id === id);
     const colorToPass = newColor || (tooth ? tooth.color : '#ffffff');
     onToothColorChange(id, colorToPass);
@@ -243,28 +243,28 @@ const handleAddAnnotation = (e) => {
     setNewColor('#af2828');
     setShowAddInput(false);
     setSelectedAnnotation(newAnnotationObj);
-    onColorChange(newAnnotationObj.color, newAnnotationObj.name); // 添加注释时，调用回调函数
+    onColorChange(newAnnotationObj.color, newAnnotationObj.name); // Call callback function when adding comments
   }
 };
   
   const handleRemoveAnnotation = (annotationToRemove) => {
     setAnnotations(annotations.filter(annotation => annotation.name !== annotationToRemove.name));
-    setSelectedAnnotation(null); // 取消当前选择的注释
+    setSelectedAnnotation(null); // Cancel the currently selected comment
   };
   
-  // 开始编辑注释
+  // Start editing comments
   const handleDoubleClick = (index, annotation) => {
-    setEditingIndex(index); // 设置正在编辑的注释索引
-    setEditedAnnotation(annotation); // 设置要编辑的注释
+    setEditingIndex(index); 
+    setEditedAnnotation(annotation); 
   };
   const handleEditSave = (index) => {
     const updatedAnnotations = [...annotations];
-    // 更新注释名称和保持颜色不变
+    // Update annotation name and keep color unchanged
     updatedAnnotations[index] = { name: editedAnnotation, color: updatedAnnotations[index].color };
     setAnnotations(updatedAnnotations);
-    setEditingIndex(null); // 完成编辑，重置编辑状态
+    setEditingIndex(null); 
 
-    // 更新颜色为编辑后的注释颜色
+    // Update the color to the edited annotation color
     onColorChange(updatedAnnotations[index].color);
     setSelectedAnnotation(updatedAnnotations[index]);
   };
