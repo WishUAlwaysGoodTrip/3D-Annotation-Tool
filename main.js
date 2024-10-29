@@ -11,7 +11,7 @@ let win;
 let hotkeysWindow; // 声明一个全局变量用于保存热键窗口实例
 let latestFolderPath = '';  // 用于保存最新上传的文件夹路径
 let saveDialogWindow;
-
+let aboutWindow;  
 
 function createWindow() {
   win = new BrowserWindow({
@@ -135,6 +135,43 @@ function createSaveDialog() {
 //     saveDialogWindow = null;
 //   });
 // }
+function createAboutWindow() {
+  // 如果窗口已经存在，则不需要重新创建
+  if (aboutWindow) {
+    aboutWindow.focus();  // 如果已经存在窗口，聚焦窗口
+    return;
+  }
+
+  aboutWindow = new BrowserWindow({
+    width: 700,
+    height: 600,
+    modal: true,  // 模态窗口，使其成为主窗口的子窗口
+    parent: win,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    autoHideMenuBar: true, 
+  });
+
+  aboutWindow.setMenuBarVisibility(false);
+
+  // 加载 HTML 或者 URL 页面
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (isDev) {
+    const port = 5173;
+    aboutWindow.loadURL(`http://localhost:${port}/help.html`);  // 在开发模式下加载帮助页面
+  } else {
+    aboutWindow.loadFile(join(__dirname, 'dist', 'help.html'));  // 在生产模式下加载打包后的 HTML 文件
+  }
+
+  // 监听窗口关闭事件
+  aboutWindow.on('closed', () => {
+    aboutWindow = null;
+  });
+}
+
 
 
 function createHotkeysWindow() {
@@ -331,7 +368,7 @@ function createMenu() {
     {
       label: 'Help',
       submenu: [
-        { label: 'About', click() { console.log('About'); } }
+        { label: 'About', click() { createAboutWindow(); } }
       ]
     }
   ];
