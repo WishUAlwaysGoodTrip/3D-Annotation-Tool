@@ -670,7 +670,9 @@ function eraseIntersectedArea(intersect) {
         );
       }
       if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
+        selectedFaceLines[selectedToothId] = new Set(
+            Array.from(selectedFaceLines[selectedToothId]).filter((item) => item.faceIndex !== Math.floor(index / 3))
+        );
       }
     });
 
@@ -869,6 +871,7 @@ function colorFace(faceIndex) {
 }
 
 function restoreLineSelections(toothId) {
+  if(!targetMesh.geometry) return;
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
   // 将所有顶点颜色重置为白色
@@ -1079,12 +1082,17 @@ function updateControls() {
     console.log("render drag")
   } else {
     controls.enableRotate = true; // 禁止旋转
-    controls.enableZoom = false;   // 禁止缩放
+    controls.enableZoom = true;   // 禁止缩放
     controls.enablePan = true;    // 禁止平移
     controls.mouseButtons = {
       MIDDLE: THREE.MOUSE.ROTATE,
       RIGHT: THREE.MOUSE.PAN
     }
+    controls.domElement.addEventListener('wheel', (event) => {
+      event.preventDefault(); // 防止页面滚动
+      controls.dollyIn(Math.pow(0.95, event.deltaY * 0.1));
+      controls.update();
+    });
   }
 }
 
