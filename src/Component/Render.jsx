@@ -882,7 +882,7 @@ function colorFace(faceIndex) {
     toothPaintData[selectedToothId].paintData.push(colorEntry);
   }
 
-  colorEntry.faceLines.push({ faceIndex, color: { r: paintColor.r, g: paintColor.g, b: paintColor.b } });
+  colorEntry.faceLines.push(faceIndex);
 }
 
 
