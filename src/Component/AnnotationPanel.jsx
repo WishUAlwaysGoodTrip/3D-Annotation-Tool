@@ -185,9 +185,10 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
       setShowAddInput(true);
     } else {
       setShowAddInput(false);
-      if (selectedAnn) {
-        onColorChange(selectedAnn.color, selectedAnn.name); // Call callback function, pass color and name
-      }
+    }
+    
+    if (selectedAnn) {
+      onColorChange(selectedAnn.color, selectedAnn.name); // Call callback function, pass color and name
     }
   };
   

@@ -367,17 +367,6 @@ function loadModel(file) {
 
     scene.add(targetMesh);
 
-    // After the model is loaded, restore the annotations and tooth color
-    if (annotationColors) {
-      Object.keys(annotationColors).forEach((annotationName) => {
-        // restoreAnnotationColors(annotationName);
-        // restoreAnnotation(annotationName,teethData); 
-      });
-    }
-
-    if (toothPaintData && selectedToothId) {
-      restoreToothColors(selectedToothId);
-    }
   }, undefined, function (error) {
     console.error('An error occurred while loading the STL file:', error);
   });
@@ -460,34 +449,36 @@ function restoreAnnotation(annotationName, teethData) {
     console.warn('No color attribute found on geometry.');
     return;
   }
-
-  // Reset all vertex colors to white
-  for (let i = 0; i < colorAttr.count; i++) {
-    colorAttr.setXYZ(i, 1, 1, 1); // Set to white
-  }
-
-  // Traverse each tooth data and restore color based on annotation names
-  teethData.forEach((tooth) => {
-    // Check if the teeth contain the specified annotation name
-    if (tooth.annotations.includes(annotationName)) {
-      const paintData = toothPaintData[tooth.id]?.paintData;
-      
-      if (Array.isArray(paintData)) {
-        paintData.forEach(({ indices, color }) => {
-          // Ensure that color exists and indices are an array
-          if (color && Array.isArray(indices)) {
-            indices.forEach((index) => {
-              // Restore the color to the specified index position
-              colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
-            });
-          }
-        });
-      }
-      restoreLineSelections(tooth.id);
+    // Reset all vertex colors to white
+    for (let i = 0; i < colorAttr.count; i++) {
+      colorAttr.setXYZ(i, 1, 1, 1); // Set to white
     }
+  if (annotationName === 'ADD...') {
+    colorAttr.needsUpdate = true; 
+    return;
+  } else {
+          // Traverse each tooth data and restore color based on annotation names
+    teethData.forEach((tooth) => {
+      // Check if the teeth contain the specified annotation name
+      if (tooth.annotations.includes(annotationName)) {
+        const paintData = toothPaintData[tooth.id]?.paintData;
+        
+        if (Array.isArray(paintData)) {
+          paintData.forEach(({ indices, color }) => {
+            // Ensure that color exists and indices are an array
+            if (color && Array.isArray(indices)) {
+              indices.forEach((index) => {
+                // Restore the color to the specified index position
+                colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+              });
+            }
+          });
+        }
+        restoreLineSelections(tooth.id);
+      }
 
-  });
-
+    });
+  }
   colorAttr.needsUpdate = true; 
 }
 
@@ -501,7 +492,7 @@ function restoreToothColors(toothId) {
   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
     toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
       indices.forEach((index) => {
-        colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
+        colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
       });
     });
     colorAttr.needsUpdate = true;
