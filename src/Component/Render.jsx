@@ -96,30 +96,14 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   }, []);
 
   useEffect(() => { 
-    // // Load persistently stored annotations and tooth color data
-    // console.log('toothPaintData Color2131312s:', toothPaintData); 
-
-    // if (annotationStore) {
-    //   // annotationColors = annotationStore.get('annotationColors') || {};
-    //   toothPaintData = annotationStore.get('toothPaintData') || {};
-    // } else {
-    //   console.warn('annotationStore is not defined');
-    // }
-    // console.log('toothPaintData Colors:', toothPaintData); 
     threeMode = mode;
     updateControls(); 
     updateEventListeners(); 
   }, [mode]);
 
-     // Monitor file changes and load STL model
-  // useEffect(() => {
-  //   if (file) {
-  //     loadModel(file); // Load the incoming STL file
-  //   }
-  // }, [file]); // Call when file changes
+
   useEffect(() => {
     if (file) {
-      console.log('File:', file);
       annotationStore = createAnnotationStore(file.name);
       if (annotationStore) {
         annotationColors = annotationStore.get('annotationColors') || {};
@@ -133,6 +117,9 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
           }
           if (!data.paintData) {
             data.paintData = [];
+          }
+          if (!data.faceLinesData) {
+            data.faceLinesData = [];
           }
         });
   
@@ -177,30 +164,27 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
   }, [toothColor, toothId]); // Call when toothColor or toothId changes
 
   useEffect(() => {
-    if (teethData && teethData.length > 0) {
-      // Traverse teethData and merge annotations into toothPaintData
-      teethData.forEach((tooth) => {
-        const { id, annotations } = tooth;
-  
-        // If there is no data for the tooth in 'toothPaintData', initialize as an empty object
-        if (!toothPaintData[id]) {
-          toothPaintData[id] = {
-            annotations: [],
-            paintData: []
-          };
-        }
-  
-        // Extract names from annotations
-        const annotationNames = annotations.map(annotation => annotation.name);
-  
-        // Use Set to remove duplicates and merge the names in the annotations array with the names already in toothPaintData
-        const existingAnnotationNames = new Set(toothPaintData[id].annotations);
-        annotationNames.forEach((name) => existingAnnotationNames.add(name));
-  
-        // Update annotations in toothPaintData to the deduplicated name array
-        toothPaintData[id].annotations = Array.from(existingAnnotationNames).filter(name => name !== undefined);
-      });
-    }
+
+    // Traverse teethData and merge annotations into toothPaintData
+    teethData.forEach((tooth) => {
+      const { id, annotations } = tooth;
+      // Initialize or retrieve the existing annotation names from toothPaintData
+      if (!toothPaintData[id]) {
+        toothPaintData[id] = {
+          annotations: [],
+          paintData: [],
+          faceLinesData: []
+        };
+      }
+    
+      // Use a Set to store unique annotation names
+      const existingAnnotationNames = new Set(toothPaintData[id].annotations);
+      // Add each annotation name from teethData to the Set
+      annotations.forEach((name) => existingAnnotationNames.add(name));
+      // Convert Set back to an array and store it in toothPaintData
+      toothPaintData[id].annotations = Array.from(existingAnnotationNames).filter(name => name !== undefined);
+    });
+    console.log('Tooth paint data:', toothPaintData);
   }, [teethData]); // Call when teethData changes
   
   
@@ -211,7 +195,7 @@ const Render = ({file, brushColor, annotationName, toothColor, toothId, teethDat
       // Save data to persistent storage
       if (annotationStore) {
         annotationStore.set('toothPaintData', toothPaintData); // Save new data structure
-  
+          
         console.log('Annotation and tooth paint data saved.');
         ipcRenderer.send('save-complete');
       } else {
@@ -398,22 +382,23 @@ function loadModel(file) {
     console.error('An error occurred while loading the STL file:', error);
   });
 }
-
-// Draw the selected area
+// 绘制选定区域
 function paintIntersectedArea(intersect, annotationName) {
   const indices = [];
   const tempVec = new THREE.Vector3();
+
   const inverseMatrix = new THREE.Matrix4();
   inverseMatrix.copy(targetMesh.matrixWorld).invert();
 
-  const circleRadius = cursorCircle.scale.x * 5;
+  const circleRadius = cursorCircle.scale.x * 5; 
   const sphere = new THREE.Sphere();
   sphere.center.copy(intersect.point).applyMatrix4(inverseMatrix);
   sphere.radius = circleRadius;
 
   targetMesh.geometry.boundsTree.shapecast({
     intersectsBounds: (box) => {
-      return sphere.intersectsBox(box) ? INTERSECTED : NOT_INTERSECTED;
+      const intersects = sphere.intersectsBox(box);
+      return intersects ? INTERSECTED : NOT_INTERSECTED;
     },
     intersectsTriangle: (tri, i, contained) => {
       if (contained || tri.intersectsSphere(sphere)) {
@@ -425,43 +410,45 @@ function paintIntersectedArea(intersect, annotationName) {
   });
 
   const colorAttr = targetMesh.geometry.getAttribute('color');
+
+  // Ensure annotationColors[annotationName] is a Set
   if (!(annotationColors[annotationName] instanceof Set)) {
     annotationColors[annotationName] = new Set();
   }
 
-  // Check and initialize colorEntry
-  let colorEntry = toothPaintData[selectedToothId].paintData.find(
-    entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
-  );
-
-  // If no corresponding color entry is found, create a new one
-  if (!colorEntry) {
-    colorEntry = {
-      indices: [],
-      color: { r: paintColor.r, g: paintColor.g, b: paintColor.b },
-      faces: [],
-      faceLines: []
-    };
-    toothPaintData[selectedToothId].paintData.push(colorEntry);
-  }
-
+  // Check if annotationName is already in annotations, if not, add it
   if (!toothPaintData[selectedToothId].annotations.includes(annotationName)) {
     toothPaintData[selectedToothId].annotations.push(annotationName);
   }
 
-  // Add an index to the selected area
+  // Check if there's an existing entry with the same color
+  let colorEntry = toothPaintData[selectedToothId].paintData.find(
+    entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
+  );
+
+  // If no existing entry is found, create a new one
+  if (!colorEntry) {
+    colorEntry = {
+      indices: [],
+      color: {
+        r: paintColor.r,
+        g: paintColor.g,
+        b: paintColor.b
+      }
+    };
+    toothPaintData[selectedToothId].paintData.push(colorEntry);
+  }
+
+  // Add all indices to the color entry
   for (let i = 0, l = indices.length; i < l; i++) {
     const index = targetMesh.geometry.index.getX(indices[i]);
     colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-    annotationColors[annotationName].add(index);
     colorEntry.indices.push(index);
-    colorEntry.faces.push(index);
   }
+  
 
-  colorAttr.needsUpdate = true;
+  colorAttr.needsUpdate = true; // Notify Three.js to update colors
 }
-
-
 
 function restoreAnnotation(annotationName, teethData) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
@@ -496,48 +483,24 @@ function restoreAnnotation(annotationName, teethData) {
           }
         });
       }
+      restoreLineSelections(tooth.id);
     }
+
   });
 
   colorAttr.needsUpdate = true; 
 }
 
-
-// function restoreToothColors(toothId) {
-//   const colorAttr = targetMesh.geometry.getAttribute('color');
-//   if (!colorAttr) {
-//     console.warn('No color attribute found on geometry.');
-//     return;
-//   }
-//   console.log("Restoring tooth colors for:", toothId);
-//   for (let i = 0; i < colorAttr.count; i++) {
-//     colorAttr.setXYZ(i, 1, 1, 1); 
-//   }
-
-//   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-//     toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
-//       indices.forEach((index) => {
-//         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
-//       });
-//     });
-//   }
-
-//   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-//     toothPaintData[toothId].paintData.forEach(({ faces, color }) => {
-//       faces.forEach(index => {
-//         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
-//       });
-//     });
-
-//   colorAttr.needsUpdate = true; 
-// }}
 function restoreToothColors(toothId) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
 
+  for (let i = 0; i < colorAttr.count; i++) {
+    colorAttr.setXYZ(i, 1, 1, 1); // 设置为白色
+  }
   if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-    toothPaintData[toothId].paintData.forEach(({ faces, color }) => {
-      faces.forEach(index => {
+    toothPaintData[toothId].paintData.forEach(({ indices, color }) => {
+      indices.forEach((index) => {
         colorAttr.setXYZ(index, color.r * 255, color.g * 255, color.b * 255);
       });
     });
@@ -577,7 +540,6 @@ function restoreToothWithNewColor(toothId) {
       color: { r: paintColor.r, g: paintColor.g, b: paintColor.b }
     }));
   }
-
   colorAttr.needsUpdate = true;
 }
 
@@ -595,10 +557,11 @@ function updatePaintColor(color) {
     const b = Math.round(paintColor.b * 255);
 
     paintColor.setRGB(r, g, b);  
+    console.log("Paint Color:", paintColor);
     // console.log("Paint Color:", paintColor); 
   } else {
     paintColor = color;
-
+    console.log("Paint Color1:", paintColor);
   }
 }
 
@@ -653,41 +616,41 @@ function eraseIntersectedArea(intersect) {
 
   // Use asynchronous batch updating of raw colors
   setTimeout(() => {
-    indices.forEach((index) => {
-      const idx = targetMesh.geometry.index.getX(index);
+    const indicesToRemove = new Set(indices.map(index => targetMesh.geometry.index.getX(index)));
+  
+    // 批量更新所有索引的颜色
+    indicesToRemove.forEach((idx) => {
       colorAttr.setXYZ(
         idx,
         originalColors[idx * 3],
         originalColors[idx * 3 + 1],
         originalColors[idx * 3 + 2]
       );
-
-      // Remove the corresponding index from 'paintData'
-      if (toothPaintData[selectedToothId] && Array.isArray(toothPaintData[selectedToothId].paintData)) {
-        toothPaintData[selectedToothId].paintData = toothPaintData[selectedToothId].paintData.filter(
-          (paint) => paint.index !== idx
-        );
-      }
-      if (selectedFaceLines[selectedToothId]) {
-        selectedFaceLines[selectedToothId] = new Set(Array.from(selectedFaceLines[selectedToothId]).filter(item => item.index !== idx));
-      }
     });
-
-    colorAttr.needsUpdate = true; // Notify Three.js to update colors
+  
+    // 从 'paintData' 和 'faceLinesData' 中移除对应索引
+    if (toothPaintData[selectedToothId]) {
+      const paintData = toothPaintData[selectedToothId].paintData;
+      if (Array.isArray(paintData)) {
+        paintData.forEach((paint) => {
+          paint.indices = paint.indices.filter((i) => !indicesToRemove.has(i));
+        });
+      }
+  
+      const faceLinesData = toothPaintData[selectedToothId].faceLinesData;
+      if (Array.isArray(faceLinesData)) {
+        faceLinesData.forEach((line) => {
+          line.indices = line.indices.filter((i) => !indicesToRemove.has(i));
+        });
+      }
+    }
+  
+    // 通知 Three.js 更新颜色
+    colorAttr.needsUpdate = true;
   }, 0);
+  
 
 }
-
-
-// Create indicator circle
-//function createCursorCircle() {
-  //const geometry = new THREE.CircleGeometry(5, 32);
-  //cursorCircleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
-  //cursorCircle = new THREE.Mesh(geometry, cursorCircleMaterial);
-
-//  cursorCircle.position.z = 1;
-//scene.add(cursorCircle);
-//}
 
 // Create indicator circles or rectangles
 function createCursorCircle(cursorShape) {
@@ -805,7 +768,6 @@ function onPointerDown(e) {
         createHighlightPoint(intersect);
       }
     }
-    console.log(`Point mouse click`);
   } else if (threeMode === 'line' && e.button === 0) {
     const mouse = new THREE.Vector2();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -849,54 +811,64 @@ function onPointerUp(e) {
 function colorFace(faceIndex) {
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
-
+  
   const indices = targetMesh.geometry.index;
   const i0 = indices.getX(faceIndex * 3);
   const i1 = indices.getX(faceIndex * 3 + 1);
   const i2 = indices.getX(faceIndex * 3 + 2);
-
+  
+  // Apply color to the face vertices
   colorAttr.setXYZ(i0, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
   colorAttr.setXYZ(i1, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
   colorAttr.setXYZ(i2, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
-
+  
   colorAttr.needsUpdate = true;
-
-  // Check and initialize colorEntry
-  let colorEntry = toothPaintData[selectedToothId].paintData.find(
+  
+  // Check if an entry with the same color already exists in faceLinesData
+  let colorEntry = toothPaintData[selectedToothId].faceLinesData.find(
     entry => entry.color.r === paintColor.r && entry.color.g === paintColor.g && entry.color.b === paintColor.b
   );
-
+  
+  // If no matching color entry exists, create a new one
   if (!colorEntry) {
     colorEntry = {
-      indices: [],
-      color: { r: paintColor.r, g: paintColor.g, b: paintColor.b },
-      faces: [],
-      faceLines: []
+      indices: [], // Ensure this is initialized as an array
+      color: {
+        r: paintColor.r,
+        g: paintColor.g,
+        b: paintColor.b
+      }
     };
-    toothPaintData[selectedToothId].paintData.push(colorEntry);
+    toothPaintData[selectedToothId].faceLinesData.push(colorEntry);
   }
-
-  colorEntry.faceLines.push(faceIndex);
+  
+  // Append indices of the current face to the existing color entry, if not already present
+  const newIndices = [i0, i1, i2];
+  newIndices.forEach(index => {
+    if (!colorEntry.indices.includes(index)) {
+      colorEntry.indices.push(index);
+    }
+  });
+    
 }
 
 
 function restoreLineSelections(toothId) {
+  if (!targetMesh.geometry) return;
   const colorAttr = targetMesh.geometry.getAttribute('color');
   if (!colorAttr) return;
 
-  if (toothPaintData[toothId] && Array.isArray(toothPaintData[toothId].paintData)) {
-    toothPaintData[toothId].paintData.forEach(({ faceLines, color }) => {
-      faceLines.forEach(({ faceIndex }) => {
-        const indices = targetMesh.geometry.index;
-        const i0 = indices.getX(faceIndex * 3);
-        const i1 = indices.getX(faceIndex * 3 + 1);
-        const i2 = indices.getX(faceIndex * 3 + 2);
-        colorAttr.setXYZ(i0, color.r * 255, color.g * 255, color.b * 255);
-        colorAttr.setXYZ(i1, color.r * 255, color.g * 255, color.b * 255);
-        colorAttr.setXYZ(i2, color.r * 255, color.g * 255, color.b * 255);
+  // Ensure `toothPaintData` and `faceLinesData` for the specified toothId exist
+  const faceLinesData = toothPaintData[toothId]?.faceLinesData;
+  if (faceLinesData && Array.isArray(faceLinesData)) {
+    faceLinesData.forEach(({ indices, color }) => {
+      // Loop through each stored index and set the color
+      indices.forEach((index) => {
+        colorAttr.setXYZ(index, paintColor.r * 255, paintColor.g * 255, paintColor.b * 255);
       });
     });
-    colorAttr.needsUpdate = true;
+
+    colorAttr.needsUpdate = true; // Notify Three.js to update colors
   }
 }
 
@@ -1027,54 +999,6 @@ function addEdgesToScene() {
   targetMesh.add(completeEdges); // Add edges to the mesh
   return completeEdges;
 }
-
-// function addGUI() {
-//   if (gui) {
-//     gui.destroy(); 
-//   }
-
-//   gui = new GUI(); 
-//   const params = {
-//     threeMode: 'dragging',
-//     cursorOpacity: cursorCircleMaterial.opacity,
-//     cursorColor: cursorCircleMaterial.color.getHex(),
-//     cursorSize: 2,
-//     renderColor: `#${paintColor.getHexString()}`,
-//   };
-
-//   // Only create 'cursor circle' and 'render color' controls, excluding mode switching controls
-//   const cursorFolder = gui.addFolder('Cursor Circle');
-//   cursorFolder
-//     .add(params, 'cursorOpacity', 0, 1)
-//     .name('Opacity')
-//     .onChange((value) => (cursorCircleMaterial.opacity = value));
-//   cursorFolder
-//     .addColor(params, 'cursorColor')
-//     .name('Color')
-//     .onChange((value) => cursorCircleMaterial.color.setHex(value));
-//   cursorFolder
-//     .add(params, 'cursorSize', 1, 20)
-//     .name('Size')
-//     .onChange((value) => {
-//       cursorCircle.scale.set(value / 5, value / 5, value / 5);
-//     });
-//   cursorFolder.close(); // Ensure that the 'cursor circle' folder is expanded by default
-
-//   const renderFolder = gui.addFolder('Render Color');
-//   renderFolder
-//     .addColor(params, 'renderColor')
-//     .name('Render Color')
-//     .onChange((value) => {
-//       paintColor.set(value);
-
-//       const r = Math.round(paintColor.r * 255);
-//       const g = Math.round(paintColor.g * 255);
-//       const b = Math.round(paintColor.b * 255);
-
-//       paintColor.setRGB(r, g, b);
-//     });
-//   renderFolder.open();
-// }
 
 // update control
 function updateControls() {

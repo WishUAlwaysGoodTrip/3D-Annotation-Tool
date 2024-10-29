@@ -41,7 +41,6 @@ const App = () => {
 
   const handleTeethDataChange = (updatedTeeth) => {
     setTeethData(updatedTeeth);
-    console.log('Updated Teeth Data:', updatedTeeth);
   };
 
   return (
