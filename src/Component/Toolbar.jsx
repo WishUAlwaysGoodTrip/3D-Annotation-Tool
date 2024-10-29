@@ -49,7 +49,8 @@ const Toolbar = () => {
           onClick={() => {
             handleButtonClick('painting');
             setActiveButton("button3");
-            setIsPanelVisible(!isPanelVisible);  // 点击后显示/隐藏面板
+            if (activeButton === 'button3')
+                setIsPanelVisible(!isPanelVisible);  // 再次点击后显示/隐藏面板
           }}
           id="button3"
         />
@@ -61,7 +62,8 @@ const Toolbar = () => {
           onClick={() => {
             handleButtonClick('dragging');
             setActiveButton("button4");
-            changeWireFrame(wireFrame);
+            if (activeButton === 'button4')
+                changeWireFrame(wireFrame);
           }}
           id="button4"
         />
