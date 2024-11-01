@@ -1,5 +1,5 @@
 {
-  "name": "mesh",
+  "name": "3D Annotaion Tool",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "start": "cross-env NODE_ENV=development concurrently \"vite\" \"electron .\"",
     "electron": "cross-env NODE_ENV=development vite build && electron .",
     "electron-build": "cross-env NODE_ENV=production vite build && electron .",
-    "start-electron": "cross-env NODE_ENV=production electron ."
+    "start-electron": "cross-env NODE_ENV=production electron .",
+    "package": "npm run build && electron-builder"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
