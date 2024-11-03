@@ -31,6 +31,31 @@ const AnnotationPanel = ({ onColorChange, onToothColorChange, onTeethDataChange,
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
   const [highlightedTeeth, setHighlightedTeeth] = useState(new Set()); // Store highlighted tooth IDs
   const [isEditing, setIsEditing] = useState(false); 
+  const [editingToothId, setEditingToothId] = useState(null); 
+  const [editedToothName, setEditedToothName] = useState(''); 
+
+  const handleDoubleClickToothId = (toothId) => {
+    const tooth = teeth.find(t => t.id === toothId);
+    if (tooth) {
+      setEditingToothId(toothId);
+      setEditedToothName(tooth.name || `Tooth ${toothId}`);
+    }
+  };
+
+  const handleToothNameChange = (e) => {
+    setEditedToothName(e.target.value);
+  };
+
+  const handleSaveToothName = () => {
+    setTeeth(prevTeeth =>
+      prevTeeth.map(tooth =>
+        tooth.id === editingToothId ? { ...tooth, name: editedToothName } : tooth
+      )
+    );
+    setEditingToothId(null);
+    setEditedToothName('');
+  };
+
   const [teeth, setTeeth] = useState(() =>
     Array.from({ length: 16 }, (_, i) => ({
       id: i + 1,
@@ -365,13 +390,32 @@ const handleAddAnnotation = (e) => {
                   onChange={(e) => handleToothAction(tooth.id, e.target.value)}
                   className="teeth-color" 
                 />
-                <span style={{ backgroundColor: highlightedTeeth.has(tooth.id.toString()) ? '#d3d3d3' : '' }}>Tooth {tooth.id}</span>
+
                 
-                {isEditing && (
-                  <button className="remove-button" onClick={(e) => { e.stopPropagation(); handleRemoveTooth(tooth.id); }}>
-                    Remove
-                  </button>
-                )}
+              {editingToothId === tooth.id ? (
+                    <input
+                      type="text"
+                      value={editedToothName}
+                      onChange={handleToothNameChange}
+                      onBlur={handleSaveToothName}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveToothName();
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span 
+                      style={{ backgroundColor: highlightedTeeth.has(tooth.id.toString()) ? '#d3d3d3' : '' }}
+                      onDoubleClick={() => handleDoubleClickToothId(tooth.id)}
+                    >
+                      {tooth.name || `Tooth ${tooth.id}`}
+                    </span>
+                  )}
+                  {isEditing && (
+                    <button className="remove-button" onClick={(e) => { e.stopPropagation(); handleRemoveTooth(tooth.id); }}>
+                      Remove
+                    </button>
+                  )}
               </div>
             ))}
           </div>
